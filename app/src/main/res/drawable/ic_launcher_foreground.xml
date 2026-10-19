@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Red rounded badge background -->
+    <path
+        android:fillColor="#DC2626"
+        android:pathData="M24,24h60a16,16 0 0,1 16,16v60a16,16 0 0,1 -16,16H24a16,16 0 0,1 -16,-16V40a16,16 0 0,1 16,-16z" />
+    <!-- White SV Monogram -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M37,42c0,-3.5 2.8,-6 7,-6c2.5,0 4.5,1 6,2.5l-3,3.5c-1,-1 -2,-1.5 -3,-1.5c-1.5,0 -2.5,1 -2.5,2.5c0,1.5 1,2.2 3,3c3.5,1.5 6,3 6,8c0,4.5 -3.5,7.5 -8.5,7.5c-3,0 -5.5,-1 -7.5,-3l3,-3.5c1.2,1 2.5,1.8 4.5,1.8c1.8,0 2.8,-0.9 2.8,-2.2c0,-1.5 -1,-2.2 -3.2,-3c-3.8,-1.5 -5.8,-3 -5.8,-7.8z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M61,37h6l4.5,15l4.5,-15h6l-8,22h-6z" />
+</vector>
