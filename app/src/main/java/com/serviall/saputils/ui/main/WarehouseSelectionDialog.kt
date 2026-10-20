@@ -13,7 +13,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.serviall.saputils.apicalls.ServicioAPI
+import com.serviall.saputils.globals.UserSession
 import com.serviall.saputils.ui.theme.ServialRed
+import com.serviall.saputils.utils.get64BaseString
 
 @Composable
 fun WarehouseSelectionDialog(
@@ -21,7 +24,23 @@ fun WarehouseSelectionDialog(
     onWarehouseSelected: (String) -> Unit,
     onDismiss: (() -> Unit)? = null
 ) {
-    val warehouses = listOf("Bodega Central", "Bodega Norte", "Bodega Sur", "Bodega Este")
+    var warehouses by remember { mutableStateOf<List<String>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(Unit) {
+        try {
+            val servicioAPI = ServicioAPI.getInstance()
+            val base64String = "Basic " + get64BaseString("serviall:8400Abn.,")
+            warehouses = servicioAPI.getswhs(base64String, UserSession.username)
+        } catch (e: Exception) {
+            errorMessage = e.message ?: "Error al cargar bodegas"
+            warehouses = listOf("Bodega Central", "Bodega Norte", "Bodega Sur")
+        } finally {
+            isLoading = false
+        }
+    }
+
     AlertDialog(
         onDismissRequest = { onDismiss?.invoke() },
         title = {
@@ -41,34 +60,54 @@ fun WarehouseSelectionDialog(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(4.dp))
-                warehouses.forEach { warehouse ->
-                    val isSelected = warehouse == currentWarehouse
-                    Surface(
-                        onClick = { onWarehouseSelected(warehouse) },
-                        shape = RoundedCornerShape(12.dp),
-                        color = if (isSelected) ServialRed.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                        border = if (isSelected) BorderStroke(1.5.dp, ServialRed) else null,
-                        modifier = Modifier.fillMaxWidth()
+
+                if (isLoading) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+                        CircularProgressIndicator(color = ServialRed)
+                    }
+                } else {
+                    if (errorMessage != null && warehouses.isEmpty()) {
+                        Text(
+                            text = "Error: $errorMessage",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                    }
+                    warehouses.forEach { warehouse ->
+                        val isSelected = warehouse == currentWarehouse
+                        Surface(
+                            onClick = { onWarehouseSelected(warehouse) },
+                            shape = RoundedCornerShape(12.dp),
+                            color = if (isSelected) ServialRed.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                            border = if (isSelected) BorderStroke(1.5.dp, ServialRed) else null,
+                            modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text(
-                                text = warehouse,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                color = if (isSelected) ServialRed else MaterialTheme.colorScheme.onSurface
-                            )
-                            if (isSelected) {
-                                Icon(
-                                    imageVector = Icons.Rounded.CheckCircle,
-                                    contentDescription = null,
-                                    tint = ServialRed,
-                                    modifier = Modifier.size(20.dp)
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = warehouse,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                    color = if (isSelected) ServialRed else MaterialTheme.colorScheme.onSurface
                                 )
+                                if (isSelected) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.CheckCircle,
+                                        contentDescription = null,
+                                        tint = ServialRed,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
                             }
                         }
                     }

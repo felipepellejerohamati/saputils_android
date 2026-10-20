@@ -40,6 +40,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import com.serviall.saputils.R;
 import com.serviall.saputils.apicalls.ServicioAPI
+import com.serviall.saputils.globals.UserSession
 import com.serviall.saputils.utils.get64BaseString
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -81,7 +82,10 @@ fun LoginScreen(
                 val base64String = "Basic " + get64BaseString("serviall:8400Abn.,")
                 val validaUser = servicioAPI.login(base64String,username, password);
                 if(validaUser=="")
+                {
+                    UserSession.username = username;
                     onLoginSuccess(username)
+                }
                 else
                     errorMessage = validaUser;
             }

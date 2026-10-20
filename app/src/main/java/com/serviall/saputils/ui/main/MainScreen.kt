@@ -36,9 +36,9 @@ enum class ServialTab(
     val title: String,
     val icon: androidx.compose.ui.graphics.vector.ImageVector
 ) {
-    RECIBIR("Recibir", Icons.Rounded.Inbox),
+    //RECIBIR("Recibir", Icons.Rounded.Inbox),
     ENTREGAR("Entregar", Icons.Rounded.LocalShipping),
-    CONSULTAR("Consultar", Icons.Rounded.Search)
+    //CONSULTAR("Consultar", Icons.Rounded.Search)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -50,7 +50,7 @@ fun MainScreen(
     onLogout: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var selectedTab by remember { mutableStateOf(ServialTab.RECIBIR) }
+    var selectedTab by remember { mutableStateOf(ServialTab.ENTREGAR) }
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val coroutineScope = rememberCoroutineScope()
 
@@ -273,21 +273,21 @@ fun MainScreen(
                     .padding(innerPadding)
             ) {
                 when (selectedTab) {
-                    ServialTab.RECIBIR -> RecibirScreen(
-                        items = items,
-                        onAddNewItem = { num, ref, client, notes, w ->
-                            viewModel.addNewReceivedItem(num, ref, client, notes, w)
-                        },
-                        onUpdateStatus = { id, status ->
-                            viewModel.updateItemStatus(id, status)
-                        },
-                        onUpdateProductQty = { id, code, qty ->
-                            viewModel.updateProductQuantity(id, code, qty)
-                        },
-                        onScanBarcode = { id, code ->
-                            viewModel.scanBarcodeAndIncrement(id, code)
-                        }
-                    )
+//                    ServialTab.RECIBIR -> RecibirScreen(
+//                        items = items,
+//                        onAddNewItem = { num, ref, client, notes, w ->
+//                            viewModel.addNewReceivedItem(num, ref, client, notes, w)
+//                        },
+//                        onUpdateStatus = { id, status ->
+//                            viewModel.updateItemStatus(id, status)
+//                        },
+//                        onUpdateProductQty = { id, code, qty ->
+//                            viewModel.updateProductQuantity(id, code, qty)
+//                        },
+//                        onScanBarcode = { id, code ->
+//                            viewModel.scanBarcodeAndIncrement(id, code)
+//                        }
+//                    )
                     ServialTab.ENTREGAR -> EntregarScreen(
                         items = items,
                         onRecordDelivery = { id, recipient, notes ->
@@ -300,9 +300,9 @@ fun MainScreen(
                             viewModel.scanBarcodeAndIncrement(id, code)
                         }
                     )
-                    ServialTab.CONSULTAR -> ConsultarScreen(
-                        items = items
-                    )
+//                    ServialTab.CONSULTAR -> ConsultarScreen(
+//                        items = items
+//                    )
                 }
             }
         }

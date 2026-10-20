@@ -15,6 +15,10 @@ interface ServicioAPI {
     suspend fun login(@Header("Authorization") token: String,
                       @Query("uid") uid: String,
                       @Query("pwd")pass: String): String
+    @GET("getwhs")
+    suspend fun getswhs(@Header("Authorization") token: String,
+                        @Query(value="uid") uid:String): List<String>
+
     companion object {
         private var servicioAPI: ServicioAPI? = null
         private var url: String = "https://alliotapi.serviall.cl/faena/"
@@ -25,6 +29,7 @@ interface ServicioAPI {
                     servicioAPI = Retrofit.Builder()
                         .baseUrl(url)
                         .addConverterFactory(MoshiConverterFactory.create())
+
                         .build()
                         .create(ServicioAPI::class.java)
                 } catch (e: Exception)
