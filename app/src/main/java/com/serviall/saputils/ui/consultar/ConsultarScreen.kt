@@ -46,11 +46,11 @@ fun ConsultarScreen(
 
     val filteredItems = items.filter { item ->
         val matchesSearch = searchQuery.isBlank() ||
-                item.number.contains(searchQuery, ignoreCase = true) ||
-                item.reference.contains(searchQuery, ignoreCase = true) ||
-                item.client.contains(searchQuery, ignoreCase = true) ||
-                item.notes.contains(searchQuery, ignoreCase = true) ||
-                item.products.any { p -> p.code.contains(searchQuery, ignoreCase = true) || p.name.contains(searchQuery, ignoreCase = true) }
+                item.number.orEmpty().contains(searchQuery, ignoreCase = true) ||
+                item.reference.orEmpty().contains(searchQuery, ignoreCase = true) ||
+                item.client.orEmpty().contains(searchQuery, ignoreCase = true) ||
+                item.notes.orEmpty().contains(searchQuery, ignoreCase = true) ||
+                item.products.orEmpty().any { p -> p.code.orEmpty().contains(searchQuery, ignoreCase = true) || p.name.orEmpty().contains(searchQuery, ignoreCase = true) }
 
         val matchesStatus = selectedStatusFilter == null || item.status == selectedStatusFilter
 

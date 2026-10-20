@@ -23,14 +23,19 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.window.core.layout.WindowWidthSizeClass
+import com.serviall.saputils.apicalls.ServicioAPI
 import com.serviall.saputils.data.ItemStatus
 import com.serviall.saputils.data.ProductItem
 import com.serviall.saputils.data.ServialItem
+import com.serviall.saputils.globals.UserSession
 import com.serviall.saputils.ui.recibir.BarcodeScanSimulationDialog
 import com.serviall.saputils.ui.recibir.ProductLineRow
 import com.serviall.saputils.ui.scanner.CameraScanDialog
 import com.serviall.saputils.ui.theme.ServialRed
+import com.serviall.saputils.utils.get64BaseString
+import com.serviall.saputils.ui.viewmodel.ServialViewModel
 
 @Suppress("DEPRECATION")
 @Composable
@@ -54,10 +59,10 @@ fun EntregarScreen(
     val deliverableItems = items.filter { item ->
         (item.status == ItemStatus.RECEIVED || item.status == ItemStatus.DELIVERING) &&
                 (searchQuery.isBlank() ||
-                        item.number.contains(searchQuery, ignoreCase = true) ||
-                        item.reference.contains(searchQuery, ignoreCase = true) ||
-                        item.client.contains(searchQuery, ignoreCase = true) ||
-                        item.products.any { p -> p.code.contains(searchQuery, ignoreCase = true) || p.name.contains(searchQuery, ignoreCase = true) })
+                        item.number.orEmpty().contains(searchQuery, ignoreCase = true) ||
+                        item.reference.orEmpty().contains(searchQuery, ignoreCase = true) ||
+                        item.client.orEmpty().contains(searchQuery, ignoreCase = true) ||
+                        item.products.orEmpty().any { p -> p.code.orEmpty().contains(searchQuery, ignoreCase = true) || p.name.orEmpty().contains(searchQuery, ignoreCase = true) })
     }
 
     Scaffold(
@@ -346,7 +351,7 @@ fun DeliveryItemCard(
                 Text("Sin productos detallados", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             } else {
                 item.products.forEach { prod ->
-                    ProductLineRow(
+                    ProductLineRowEnt(
                         product = prod,
                         onQuantityChanged = { newQty -> onUpdateProductQty(prod.code, newQty) }
                     )
@@ -386,7 +391,63 @@ fun DeliveryItemCard(
         }
     }
 }
+@Composable
+fun ProductLineRowEnt(
+product: ProductItem,
+onQuantityChanged: (Int) -> Unit
+) {
+    Surface(
+        shape = RoundedCornerShape(10.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(text = product.code, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = ServialRed)
+                    Text(text = "•", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(text = product.name, fontSize = 12.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface)
+                }
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = "Solicitado: ${product.expectedQty} | Inventario: ${product.actualQty}",
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
 
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                IconButton(
+                    onClick = { onQuantityChanged(product.actualQty - 1) },
+                    modifier = Modifier.size(28.dp)
+                ) {
+                    Icon(imageVector = Icons.Rounded.Remove, contentDescription = "Decrease", modifier = Modifier.size(16.dp))
+                }
+                Text(
+                    text = "${product.actualQty}",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 13.sp,
+                    modifier = Modifier.padding(horizontal = 4.dp)
+                )
+                IconButton(
+                    onClick = { onQuantityChanged(product.actualQty + 1) },
+                    modifier = Modifier.size(28.dp)
+                ) {
+                    Icon(imageVector = Icons.Rounded.Add, contentDescription = "Increase", modifier = Modifier.size(16.dp))
+                }
+            }
+        }
+    }
+}
 @Composable
 fun RecordDeliveryDialog(
     item: ServialItem,

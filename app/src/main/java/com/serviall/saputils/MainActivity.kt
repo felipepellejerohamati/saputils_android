@@ -14,6 +14,7 @@ import com.serviall.saputils.ui.main.MainScreen
 import com.serviall.saputils.ui.main.WarehouseSelectionDialog
 import com.serviall.saputils.ui.theme.SaputilsTheme
 import com.serviall.saputils.ui.viewmodel.ServialViewModel
+import com.serviall.saputils.globals.UserSession
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -50,6 +51,7 @@ class MainActivity : ComponentActivity() {
                             currentWarehouse = "Bodega Central",
                             onWarehouseSelected = { warehouse ->
                                 servialViewModel.setWarehouse(warehouse)
+                                UserSession.wharehouse = warehouse
                                 showWarehouseSelectionDialog = false
                                 isLoggedIn = true
                             }

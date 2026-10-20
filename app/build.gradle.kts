@@ -89,4 +89,5 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.tooling)
     "ksp"(libs.androidx.room.compiler)
     "ksp"(libs.moshi.kotlin.codegen)
+    implementation("com.squareup.retrofit2:converter-gson:3.0.0")
 }

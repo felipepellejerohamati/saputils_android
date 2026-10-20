@@ -25,11 +25,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.window.core.layout.WindowWidthSizeClass
 import com.serviall.saputils.R
+import com.serviall.saputils.apicalls.ServicioAPI
+import com.serviall.saputils.data.ServialItem
+import com.serviall.saputils.globals.UserSession
 import com.serviall.saputils.ui.consultar.ConsultarScreen
 import com.serviall.saputils.ui.entregar.EntregarScreen
 import com.serviall.saputils.ui.recibir.RecibirScreen
 import com.serviall.saputils.ui.theme.ServialRed
 import com.serviall.saputils.ui.viewmodel.ServialViewModel
+import com.serviall.saputils.utils.get64BaseString
 import kotlinx.coroutines.launch
 
 enum class ServialTab(
@@ -54,9 +58,34 @@ fun MainScreen(
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val coroutineScope = rememberCoroutineScope()
 
-    val items by viewModel.items.collectAsState()
     val activeWarehouse by viewModel.activeWarehouse.collectAsState()
     var showWarehouseDialog by remember { mutableStateOf(false) }
+    var entregas by remember { mutableStateOf<List<ServialItem>>(emptyList()) }
+    var isLoadingEntregas by remember { mutableStateOf(true) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    val loadEntregas: () -> Unit = {
+        coroutineScope.launch {
+            isLoadingEntregas = true
+            errorMessage = null
+            try {
+                val servicioAPI = ServicioAPI.getInstance()
+                val base64String = "Basic " + get64BaseString("serviall:8400Abn.,")
+                entregas = servicioAPI.orders(base64String, activeWarehouse)
+            } catch (e: Exception) {
+                errorMessage = e.message ?: "Error al cargar órdenes"
+                entregas = emptyList()
+            } finally {
+                isLoadingEntregas = false
+            }
+        }
+    }
+
+    LaunchedEffect(activeWarehouse) {
+        loadEntregas()
+    }
+
+
 
     val windowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
     val isLargeScreen = windowSizeClass.windowWidthSizeClass != WindowWidthSizeClass.COMPACT
@@ -288,18 +317,49 @@ fun MainScreen(
 //                            viewModel.scanBarcodeAndIncrement(id, code)
 //                        }
 //                    )
-                    ServialTab.ENTREGAR -> EntregarScreen(
-                        items = items,
-                        onRecordDelivery = { id, recipient, notes ->
-                            viewModel.recordDelivery(id, recipient, notes)
-                        },
-                        onUpdateProductQty = { id, code, qty ->
-                            viewModel.updateProductQuantity(id, code, qty)
-                        },
-                        onScanBarcode = { id, code ->
-                            viewModel.scanBarcodeAndIncrement(id, code)
+                    ServialTab.ENTREGAR -> {
+                        if (isLoadingEntregas) {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(color = ServialRed)
+                            }
+                        } else if (errorMessage != null) {
+                            Box(
+                                modifier = Modifier.fillMaxSize().padding(16.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(
+                                        text = "Error: $errorMessage",
+                                        color = MaterialTheme.colorScheme.error,
+                                        fontSize = 14.sp
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Button(
+                                        onClick = { loadEntregas() },
+                                        colors = ButtonDefaults.buttonColors(containerColor = ServialRed)
+                                    ) {
+                                        Text("Reintentar")
+                                    }
+                                }
+                            }
+                        } else {
+                            EntregarScreen(
+                                items = entregas,
+                                onRecordDelivery = { id, recipient, notes ->
+                                    viewModel.recordDelivery(id, recipient, notes)
+                                },
+                                onUpdateProductQty = { id, code, qty ->
+                                    viewModel.updateProductQuantity(id, code, qty)
+                                },
+                                onScanBarcode = { id, code ->
+                                    viewModel.scanBarcodeAndIncrement(id, code)
+                                }
+                            )
                         }
-                    )
+                    }
 //                    ServialTab.CONSULTAR -> ConsultarScreen(
 //                        items = items
 //                    )
@@ -330,6 +390,7 @@ fun MainScreen(
             currentWarehouse = activeWarehouse,
             onWarehouseSelected = { warehouse ->
                 viewModel.setWarehouse(warehouse)
+                UserSession.wharehouse = warehouse
                 showWarehouseDialog = false
             },
             onDismiss = { showWarehouseDialog = false }

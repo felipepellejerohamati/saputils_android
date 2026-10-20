@@ -53,11 +53,11 @@ fun RecibirScreen(
     val filteredItems = items.filter { item ->
         val query = searchQuery.trim().lowercase()
         query.isEmpty() ||
-                item.number.lowercase().contains(query) ||
-                item.reference.lowercase().contains(query) ||
-                item.client.lowercase().contains(query) ||
-                item.notes.lowercase().contains(query) ||
-                item.products.any { p -> p.code.lowercase().contains(query) || p.name.lowercase().contains(query) }
+                item.number.orEmpty().lowercase().contains(query) ||
+                item.reference.orEmpty().lowercase().contains(query) ||
+                item.client.orEmpty().lowercase().contains(query) ||
+                item.notes.orEmpty().lowercase().contains(query) ||
+                item.products.orEmpty().any { p -> p.code.orEmpty().lowercase().contains(query) || p.name.orEmpty().lowercase().contains(query) }
     }
 
     Scaffold(
@@ -405,7 +405,6 @@ fun ReceivingItemCard(
         }
     }
 }
-
 @Composable
 fun ProductLineRow(
     product: ProductItem,
