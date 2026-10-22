@@ -148,10 +148,10 @@ class ServialViewModel : ViewModel() {
             current.map { item ->
                 if (item.id == itemId) {
                     val updatedProducts = item.products.map { prod ->
-                        if (prod.code.equals(productCode, ignoreCase = true) &&
+                        if (prod.code.trim().equals(productCode.trim(), ignoreCase = true) &&
                             prod.linenum == linenum &&
-                            prod.substitute.equals(substitute, ignoreCase = true)) {
-                            val maxLimit = if (prod.actualQty == 0) prod.actualQty else prod.expectedQty
+                            prod.substitute.trim().equals(substitute.trim(), ignoreCase = true)) {
+                            val maxLimit = if (prod.actualQty > prod.expectedQty) prod.expectedQty else prod.actualQty
                             val clamped = newActualQty.coerceIn(0, maxLimit)
                             prod.copy(delivrdqty = clamped)
                         } else prod
@@ -168,15 +168,18 @@ class ServialViewModel : ViewModel() {
                 if (item.id == itemId) {
                     var found = false
                     val updatedProducts = item.products.map { prod ->
-                        if (prod.code.equals(productCode, ignoreCase = true) &&
+                        if (prod.code.trim().equals(productCode.trim(), ignoreCase = true) &&
                             (linenum == 0 || prod.linenum == linenum) &&
-                            prod.substitute.equals(substitute, ignoreCase = true)) {
+                            prod.substitute.trim().equals(substitute.trim(), ignoreCase = true)) {
                             found = true
-                            prod.copy(actualQty = prod.delivrdqty + 1)
+                            //val maxLimit = if (prod.actualQty > 0) minOf(prod.expectedQty, prod.actualQty) else prod.expectedQty
+                            val maxLimit = if (prod.actualQty > prod.expectedQty) prod.expectedQty else prod.actualQty
+                            val newDeliv = minOf(maxLimit, prod.delivrdqty + 1)
+                            prod.copy(delivrdqty = newDeliv)
                         } else prod
                     }
                     val finalProducts = if (!found) {
-                        updatedProducts + ProductItem(code = productCode.uppercase(), name = "Producto Escaneado ($productCode)", expectedQty = 1, actualQty = 1, linenum = linenum, substitute = substitute)
+                        updatedProducts + ProductItem(code = productCode.uppercase(), name = "Producto Escaneado ($productCode)", expectedQty = 1, actualQty = 1, delivrdqty = 1, linenum = linenum, substitute = substitute)
                     } else {
                         updatedProducts
                     }

@@ -426,7 +426,7 @@ onQuantityChanged: (Int) -> Unit
                     Text(
                         text = "Código Cliente: ${product.substitute}",
                         fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = ServialRed
                     )
                 }
                 Spacer(modifier = Modifier.height(2.dp))

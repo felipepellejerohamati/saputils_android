@@ -56,6 +56,7 @@ fun MainScreen(
     modifier: Modifier = Modifier
 ) {
     var selectedTab by rememberSaveable { mutableStateOf(ServialTab.ENTREGAR) }
+    var isMenuCollapsed by rememberSaveable { mutableStateOf(false) }
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val coroutineScope = rememberCoroutineScope()
 
@@ -95,13 +96,13 @@ fun MainScreen(
 
     val drawerContent: @Composable () -> Unit = {
         ModalDrawerSheet(
-            modifier = Modifier.width(300.dp),
+            modifier = Modifier.width(if (isLargeScreen && isMenuCollapsed) 80.dp else 300.dp),
             drawerContainerColor = MaterialTheme.colorScheme.surface
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxHeight()
-                    .padding(16.dp),
+                    .padding(if (isLargeScreen && isMenuCollapsed) 8.dp else 16.dp),
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
                 Column(
@@ -113,7 +114,7 @@ fun MainScreen(
                             .fillMaxWidth()
                             .padding(vertical = 16.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        horizontalArrangement = if (isLargeScreen && isMenuCollapsed) Arrangement.Center else Arrangement.SpaceBetween
                     ) {
                         Surface(
                             modifier = Modifier.size(48.dp),
@@ -130,42 +131,53 @@ fun MainScreen(
                                 )
                             }
                         }
-                        Column {
-                            Text(
-                                text = "SERVIALL",
-                                fontWeight = FontWeight.ExtraBold,
-                                fontSize = 18.sp,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                letterSpacing = 1.5.sp
-                            )
-                            Text(
-                                text = "Usuario: $username",
-                                fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                        if (!isLargeScreen || !isMenuCollapsed) {
+                            Column(modifier = Modifier.weight(1f).padding(start = 12.dp)) {
+                                Text(
+                                    text = "SERVIALL",
+                                    fontWeight = FontWeight.ExtraBold,
+                                    fontSize = 18.sp,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    letterSpacing = 1.5.sp
+                                )
+                                Text(
+                                    text = "Usuario: $username",
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
                     }
 
-                    // Active Warehouse Card in Drawer
-                    Surface(
-                        onClick = { showWarehouseDialog = true },
-                        shape = RoundedCornerShape(12.dp),
-                        color = ServialRed.copy(alpha = 0.1f),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    if (!isLargeScreen || !isMenuCollapsed) {
+                        // Active Warehouse Card in Drawer
+                        Surface(
+                            onClick = { showWarehouseDialog = true },
+                            shape = RoundedCornerShape(12.dp),
+                            color = ServialRed.copy(alpha = 0.1f),
+                            modifier = Modifier.fillMaxWidth()
                         ) {
-                            Icon(imageVector = Icons.Rounded.Store, contentDescription = null, tint = ServialRed, modifier = Modifier.size(20.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(text = "Bodega Activa", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                Text(text = activeWarehouse, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = ServialRed)
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(imageVector = Icons.Rounded.Store, contentDescription = null, tint = ServialRed, modifier = Modifier.size(20.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(text = "Bodega Activa", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text(text = activeWarehouse, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = ServialRed)
+                                }
+                                Text("Cambiar", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = ServialRed)
                             }
-                            Text("Cambiar", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = ServialRed)
+                        }
+                    } else {
+                        IconButton(
+                            onClick = { showWarehouseDialog = true },
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
+                        ) {
+                            Icon(imageVector = Icons.Rounded.Store, contentDescription = "Bodega: $activeWarehouse", tint = ServialRed)
                         }
                     }
 
@@ -175,7 +187,7 @@ fun MainScreen(
                     ServialTab.entries.forEach { tab ->
                         NavigationDrawerItem(
                             icon = { Icon(imageVector = tab.icon, contentDescription = tab.title) },
-                            label = { Text(tab.title, fontWeight = FontWeight.Medium) },
+                            label = if (isLargeScreen && isMenuCollapsed) { { } } else { { Text(tab.title, fontWeight = FontWeight.Medium) } },
                             selected = selectedTab == tab,
                             onClick = {
                                 selectedTab = tab
@@ -199,7 +211,7 @@ fun MainScreen(
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                     NavigationDrawerItem(
                         icon = { Icon(imageVector = Icons.AutoMirrored.Rounded.Logout, contentDescription = "Salir") },
-                        label = { Text("Salir / Logout", fontWeight = FontWeight.Medium, color = ServialRed) },
+                        label = if (isLargeScreen && isMenuCollapsed) { { } } else { { Text("Salir / Logout", fontWeight = FontWeight.Medium, color = ServialRed) } },
                         selected = false,
                         onClick = { onLogout() },
                         shape = RoundedCornerShape(12.dp),
@@ -236,6 +248,15 @@ fun MainScreen(
                                 Icon(
                                     imageVector = Icons.Rounded.Menu,
                                     contentDescription = "Menu"
+                                )
+                            }
+                        } else {
+                            IconButton(onClick = {
+                                isMenuCollapsed = !isMenuCollapsed
+                            }) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Menu,
+                                    contentDescription = "Colapsar/Expandir menú"
                                 )
                             }
                         }

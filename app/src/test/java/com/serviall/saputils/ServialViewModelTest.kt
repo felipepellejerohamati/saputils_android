@@ -20,24 +20,24 @@ class ServialViewModelTest {
         val viewModel = ServialViewModel()
         val item = viewModel.items.value.first()
         val initialProduct = item.products.first()
-        val initialQty = initialProduct.actualQty
+        val initialQty = initialProduct.delivrdqty
 
         // Update product quantity directly
         viewModel.updateProductQuantity(item.id, initialProduct.code, initialProduct.linenum, initialProduct.substitute, initialQty + 2)
         val updatedItem = viewModel.items.value.first { it.id == item.id }
         val updatedProduct = updatedItem.products.first { it.code == initialProduct.code }
-        assertEquals(initialQty + 2, updatedProduct.actualQty)
+        assertEquals(initialQty + 2, updatedProduct.delivrdqty)
 
         // Test barcode scan and increment
         viewModel.scanBarcodeAndIncrement(item.id, initialProduct.code, initialProduct.linenum, initialProduct.substitute)
         val scannedItem = viewModel.items.value.first { it.id == item.id }
         val scannedProduct = scannedItem.products.first { it.code == initialProduct.code }
-        assertEquals(initialQty + 3, scannedProduct.actualQty)
+        assertEquals(initialQty + 3, scannedProduct.delivrdqty)
 
         // Test scanning a new barcode (adds new product item)
         viewModel.scanBarcodeAndIncrement(item.id, "PRD-NEW-999")
         val newProductItem = viewModel.items.value.first { it.id == item.id }.products.firstOrNull { it.code == "PRD-NEW-999" }
         assertNotNull(newProductItem)
-        assertEquals(1, newProductItem?.actualQty)
+        assertEquals(1, newProductItem?.delivrdqty)
     }
 }
