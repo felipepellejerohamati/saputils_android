@@ -179,7 +179,12 @@ class ServialViewModel : ViewModel() {
                         } else prod
                     }
                     val finalProducts = if (!found) {
-                        updatedProducts + ProductItem(code = productCode.uppercase(), name = "Producto Escaneado ($productCode)", expectedQty = 1, actualQty = 1, delivrdqty = 1, linenum = linenum, substitute = substitute)
+                        updatedProducts + ProductItem(code = productCode.uppercase(),
+                            name = "Producto Escaneado ($productCode)",
+                            expectedQty = updatedProducts.first().expectedQty,
+                            actualQty = updatedProducts.first().actualQty,
+                            delivrdqty = 1,
+                            linenum = linenum, substitute = substitute)
                     } else {
                         updatedProducts
                     }

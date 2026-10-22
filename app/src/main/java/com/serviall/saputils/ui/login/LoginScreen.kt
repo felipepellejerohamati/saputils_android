@@ -152,7 +152,7 @@ fun LoginScreen(
                     Box(contentAlignment = Alignment.Center) {
                         Image(
                             painter = painterResource(R.drawable.serviall_isotipo_rojo),
-                            contentDescription = "Compose Multiplatform logo",
+                            contentDescription = "logo",
                             modifier = Modifier
                             .size(76.dp)
                             .clip(RoundedCornerShape(20.dp))

@@ -1,6 +1,7 @@
 package com.serviall.saputils.ui.main
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -119,7 +120,7 @@ fun MainScreen(
                         Surface(
                             modifier = Modifier.size(48.dp),
                             shape = RoundedCornerShape(12.dp),
-                            color = ServialRed
+                            //color = ServialRed
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Image(

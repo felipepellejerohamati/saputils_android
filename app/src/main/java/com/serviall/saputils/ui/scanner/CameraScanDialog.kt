@@ -301,7 +301,7 @@ fun CameraScanDialog(
                 ) {
                     Icon(imageVector = Icons.Rounded.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Entrada Manual / Simulador", fontWeight = FontWeight.Bold)
+                    Text("Entrada Manual", fontWeight = FontWeight.Bold)
                 }
             }
         }

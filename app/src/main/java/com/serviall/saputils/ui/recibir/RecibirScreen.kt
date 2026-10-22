@@ -471,12 +471,8 @@ fun BarcodeScanSimulationDialog(
 ) {
     var manualCode by remember { mutableStateOf("") }
     val sampleBarcodes = listOf(
-        "PRD-001" to "Servidor Blade Pro",
-        "PRD-002" to "Módulo Memoria 32GB",
-        "PRD-003" to "Licencia SAP S/4HANA",
-        "PRD-004" to "Switch Industrial 24p",
-        "PRD-005" to "Sensor IoT Temperatura",
-        "PRD-006" to "Terminal Portátil Barcode"
+        "1226960" to "Brocha 4",
+        "10040892" to "Diluyente Sintetico 1LT"
     )
 
     AlertDialog(
