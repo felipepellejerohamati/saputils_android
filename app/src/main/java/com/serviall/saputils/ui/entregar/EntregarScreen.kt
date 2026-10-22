@@ -42,7 +42,7 @@ import com.serviall.saputils.ui.viewmodel.ServialViewModel
 fun EntregarScreen(
     items: List<ServialItem>,
     onRecordDelivery: (String, String, String) -> Unit,
-    onUpdateProductQty: (String, String, Int) -> Unit,
+    onUpdateProductQty: (String, String, Int, String, Int) -> Unit,
     onScanBarcode: (String, String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -57,12 +57,19 @@ fun EntregarScreen(
     val isLargeScreen = windowSizeClass.windowWidthSizeClass != WindowWidthSizeClass.COMPACT
 
     val deliverableItems = items.filter { item ->
-        (item.status == ItemStatus.RECEIVED || item.status == ItemStatus.DELIVERING) &&
-                (searchQuery.isBlank() ||
-                        item.number.orEmpty().contains(searchQuery, ignoreCase = true) ||
-                        item.reference.orEmpty().contains(searchQuery, ignoreCase = true) ||
-                        item.client.orEmpty().contains(searchQuery, ignoreCase = true) ||
-                        item.products.orEmpty().any { p -> p.code.orEmpty().contains(searchQuery, ignoreCase = true) || p.name.orEmpty().contains(searchQuery, ignoreCase = true) })
+        val query = searchQuery.trim().lowercase()
+        val isNotCompleted = item.status != ItemStatus.COMPLETED
+        val matchesSearch = query.isEmpty() ||
+                item.number.orEmpty().lowercase().contains(query) ||
+                item.reference.orEmpty().lowercase().contains(query) ||
+                item.client.orEmpty().lowercase().contains(query) ||
+                item.notes.orEmpty().lowercase().contains(query) ||
+                item.products.orEmpty().any { p ->
+                    p.code.orEmpty().lowercase().contains(query) ||
+                            p.name.orEmpty().lowercase().contains(query) ||
+                            p.substitute.orEmpty().lowercase().contains(query)
+                }
+        isNotCompleted && matchesSearch
     }
 
     Scaffold(
@@ -174,7 +181,7 @@ fun EntregarScreen(
                             DeliveryItemCard(
                                 item = item,
                                 onDeliverClick = { selectedItemForDelivery = item },
-                                onUpdateProductQty = { code, qty -> onUpdateProductQty(item.id, code, qty) },
+                                onUpdateProductQty = { code, linenum, substitute, qty -> onUpdateProductQty(item.id, code, linenum, substitute, qty) },
                                 onScanClick = { activeCameraScanItem = item }
                             )
                         }
@@ -190,7 +197,7 @@ fun EntregarScreen(
                             DeliveryItemCard(
                                 item = item,
                                 onDeliverClick = { selectedItemForDelivery = item },
-                                onUpdateProductQty = { code, qty -> onUpdateProductQty(item.id, code, qty) },
+                                onUpdateProductQty = { code, linenum, substitute, qty -> onUpdateProductQty(item.id, code, linenum, substitute, qty) },
                                 onScanClick = { activeCameraScanItem = item }
                             )
                         }
@@ -270,7 +277,7 @@ fun EntregarScreen(
 fun DeliveryItemCard(
     item: ServialItem,
     onDeliverClick: () -> Unit,
-    onUpdateProductQty: (String, Int) -> Unit,
+    onUpdateProductQty: (String, Int, String, Int) -> Unit,
     onScanClick: () -> Unit
 ) {
     Card(
@@ -353,7 +360,7 @@ fun DeliveryItemCard(
                 item.products.forEach { prod ->
                     ProductLineRowEnt(
                         product = prod,
-                        onQuantityChanged = { newQty -> onUpdateProductQty(prod.code, newQty) }
+                        onQuantityChanged = { newQty -> onUpdateProductQty(prod.code, prod.linenum, prod.substitute, newQty) }
                     )
                     Spacer(modifier = Modifier.height(6.dp))
                 }
@@ -414,6 +421,14 @@ onQuantityChanged: (Int) -> Unit
                     Text(text = "•", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(text = product.name, fontSize = 12.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface)
                 }
+                if (product.substitute.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "Código Cliente: ${product.substitute}",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = "Solicitado: ${product.expectedQty} | Inventario: ${product.actualQty}",
@@ -427,19 +442,19 @@ onQuantityChanged: (Int) -> Unit
                 horizontalArrangement = Arrangement.spacedBy(2.dp)
             ) {
                 IconButton(
-                    onClick = { onQuantityChanged(product.actualQty - 1) },
+                    onClick = { onQuantityChanged(product.delivrdqty - 1) },
                     modifier = Modifier.size(28.dp)
                 ) {
                     Icon(imageVector = Icons.Rounded.Remove, contentDescription = "Decrease", modifier = Modifier.size(16.dp))
                 }
                 Text(
-                    text = "${product.actualQty}",
+                    text = "${ product.delivrdqty }",
                     fontWeight = FontWeight.Bold,
                     fontSize = 13.sp,
                     modifier = Modifier.padding(horizontal = 4.dp)
                 )
                 IconButton(
-                    onClick = { onQuantityChanged(product.actualQty + 1) },
+                    onClick = { onQuantityChanged( product.delivrdqty + 1) },
                     modifier = Modifier.size(28.dp)
                 ) {
                     Icon(imageVector = Icons.Rounded.Add, contentDescription = "Increase", modifier = Modifier.size(16.dp))

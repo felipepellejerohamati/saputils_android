@@ -15,6 +15,7 @@ import androidx.compose.material.icons.rounded.VerifiedUser
 import androidx.compose.material3.*
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -54,13 +55,13 @@ fun MainScreen(
     onLogout: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var selectedTab by remember { mutableStateOf(ServialTab.ENTREGAR) }
+    var selectedTab by rememberSaveable { mutableStateOf(ServialTab.ENTREGAR) }
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val coroutineScope = rememberCoroutineScope()
 
     val activeWarehouse by viewModel.activeWarehouse.collectAsState()
     var showWarehouseDialog by remember { mutableStateOf(false) }
-    var entregas by remember { mutableStateOf<List<ServialItem>>(emptyList()) }
+    val items by viewModel.items.collectAsState()
     var isLoadingEntregas by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
@@ -71,10 +72,12 @@ fun MainScreen(
             try {
                 val servicioAPI = ServicioAPI.getInstance()
                 val base64String = "Basic " + get64BaseString("serviall:8400Abn.,")
-                entregas = servicioAPI.orders(base64String, activeWarehouse)
+                val fetchedOrders = servicioAPI.orders(base64String, activeWarehouse)
+                if (fetchedOrders.isNotEmpty()) {
+                    viewModel.setItems(fetchedOrders)
+                }
             } catch (e: Exception) {
                 errorMessage = e.message ?: "Error al cargar órdenes"
-                entregas = emptyList()
             } finally {
                 isLoadingEntregas = false
             }
@@ -347,12 +350,12 @@ fun MainScreen(
                             }
                         } else {
                             EntregarScreen(
-                                items = entregas,
+                                items = items,
                                 onRecordDelivery = { id, recipient, notes ->
                                     viewModel.recordDelivery(id, recipient, notes)
                                 },
-                                onUpdateProductQty = { id, code, qty ->
-                                    viewModel.updateProductQuantity(id, code, qty)
+                                onUpdateProductQty = { id, code, linenum, substitute, qty ->
+                                    viewModel.updateProductQuantity(id, code, linenum, substitute, qty)
                                 },
                                 onScanBarcode = { id, code ->
                                     viewModel.scanBarcodeAndIncrement(id, code)

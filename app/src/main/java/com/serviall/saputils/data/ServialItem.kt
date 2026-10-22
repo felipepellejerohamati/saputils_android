@@ -12,8 +12,11 @@ enum class ItemStatus(val label: String) {
 data class ProductItem(
     val code: String = "",
     val name: String = "",
+    val substitute: String = "",
     val expectedQty: Int = 1,
-    val actualQty: Int = 0
+    val actualQty: Int = 0,
+    val delivrdqty: Int=0,
+    val linenum: Int = 0
 )
 
 data class ServialItem(

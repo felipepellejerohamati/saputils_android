@@ -21,6 +21,10 @@ class ServialViewModel : ViewModel() {
         _activeWarehouse.value = warehouse
     }
 
+    fun setItems(newItems: List<ServialItem>) {
+        _items.value = newItems
+    }
+
     private val _items = MutableStateFlow<List<ServialItem>>(
         listOf(
             ServialItem(
@@ -32,8 +36,8 @@ class ServialViewModel : ViewModel() {
                 notes = "Paquete frágil con equipos SAP industriales",
                 weightKg = 4.2,
                 products = listOf(
-                    ProductItem("PRD-001", "Servidor Blade Pro", 5, 3),
-                    ProductItem("PRD-002", "Módulo Memoria 32GB", 10, 10)
+                    ProductItem("PRD-001", "Servidor Blade Pro", "PRD-001-ALT", 3),
+                    ProductItem("PRD-002", "Módulo Memoria 32GB", "", 10)
                 )
             ),
             ServialItem(
@@ -45,7 +49,7 @@ class ServialViewModel : ViewModel() {
                 notes = "Documentación fiscal y certificados de calibración",
                 weightKg = 0.8,
                 products = listOf(
-                    ProductItem("PRD-003", "Licencia SAP S/4HANA", 2, 2)
+                    ProductItem("PRD-003", "Licencia SAP S/4HANA", "", 2)
                 )
             ),
             ServialItem(
@@ -57,8 +61,8 @@ class ServialViewModel : ViewModel() {
                 notes = "Repuestos de servidores blade",
                 weightKg = 7.5,
                 products = listOf(
-                    ProductItem("PRD-001", "Servidor Blade Pro", 2, 2),
-                    ProductItem("PRD-004", "Switch Industrial 24p", 1, 1)
+                    ProductItem("PRD-001", "Servidor Blade Pro", "", 2),
+                    ProductItem("PRD-004", "Switch Industrial 24p", "", 1)
                 )
             ),
             ServialItem(
@@ -72,7 +76,7 @@ class ServialViewModel : ViewModel() {
                 deliveryTimestamp = "2025-05-08 16:45",
                 weightKg = 2.1,
                 products = listOf(
-                    ProductItem("PRD-005", "Sensor IoT Temperatura", 4, 4)
+                    ProductItem("PRD-005", "Sensor IoT Temperatura", "", 4)
                 )
             ),
             ServialItem(
@@ -84,7 +88,7 @@ class ServialViewModel : ViewModel() {
                 notes = "Terminales portátiles de código de barras",
                 weightKg = 3.0,
                 products = listOf(
-                    ProductItem("PRD-006", "Terminal Portátil Barcode", 3, 1)
+                    ProductItem("PRD-006", "Terminal Portátil Barcode", "", 1)
                 )
             )
         )
@@ -103,8 +107,8 @@ class ServialViewModel : ViewModel() {
             notes = notes,
             weightKg = weightKg,
             products = listOf(
-                ProductItem("PRD-001", "Servidor Blade Pro", 2, 0),
-                ProductItem("PRD-002", "Módulo Memoria 32GB", 5, 0)
+                ProductItem("PRD-001", "Servidor Blade Pro", "", 0),
+                ProductItem("PRD-002", "Módulo Memoria 32GB", "", 0)
             )
         )
         _items.update { current -> listOf(newItem) + current }
@@ -139,13 +143,17 @@ class ServialViewModel : ViewModel() {
         }
     }
 
-    fun updateProductQuantity(itemId: String, productCode: String, newActualQty: Int) {
+    fun updateProductQuantity(itemId: String, productCode: String, linenum: Int, substitute: String, newActualQty: Int) {
         _items.update { current ->
             current.map { item ->
                 if (item.id == itemId) {
                     val updatedProducts = item.products.map { prod ->
-                        if (prod.code == productCode) {
-                            prod.copy(actualQty = maxOf(0, newActualQty))
+                        if (prod.code.equals(productCode, ignoreCase = true) &&
+                            prod.linenum == linenum &&
+                            prod.substitute.equals(substitute, ignoreCase = true)) {
+                            val maxLimit = if (prod.actualQty == 0) prod.actualQty else prod.expectedQty
+                            val clamped = newActualQty.coerceIn(0, maxLimit)
+                            prod.copy(delivrdqty = clamped)
                         } else prod
                     }
                     item.copy(products = updatedProducts)
@@ -154,19 +162,21 @@ class ServialViewModel : ViewModel() {
         }
     }
 
-    fun scanBarcodeAndIncrement(itemId: String, productCode: String) {
+    fun scanBarcodeAndIncrement(itemId: String, productCode: String, linenum: Int = 0, substitute: String = "") {
         _items.update { current ->
             current.map { item ->
                 if (item.id == itemId) {
                     var found = false
                     val updatedProducts = item.products.map { prod ->
-                        if (prod.code.equals(productCode, ignoreCase = true)) {
+                        if (prod.code.equals(productCode, ignoreCase = true) &&
+                            (linenum == 0 || prod.linenum == linenum) &&
+                            prod.substitute.equals(substitute, ignoreCase = true)) {
                             found = true
-                            prod.copy(actualQty = prod.actualQty + 1)
+                            prod.copy(actualQty = prod.delivrdqty + 1)
                         } else prod
                     }
                     val finalProducts = if (!found) {
-                        updatedProducts + ProductItem(code = productCode.uppercase(), name = "Producto Escaneado ($productCode)", expectedQty = 1, actualQty = 1)
+                        updatedProducts + ProductItem(code = productCode.uppercase(), name = "Producto Escaneado ($productCode)", expectedQty = 1, actualQty = 1, linenum = linenum, substitute = substitute)
                     } else {
                         updatedProducts
                     }

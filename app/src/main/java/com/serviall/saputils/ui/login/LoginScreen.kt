@@ -2,6 +2,7 @@ package com.serviall.saputils.ui.login
 
 import android.content.res.Resources
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -40,7 +41,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import com.serviall.saputils.R;
 import com.serviall.saputils.apicalls.ServicioAPI
+import androidx.compose.ui.platform.LocalContext
 import com.serviall.saputils.globals.UserSession
+import com.serviall.saputils.utils.UserPreferences
 import com.serviall.saputils.utils.get64BaseString
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -49,8 +52,10 @@ fun LoginScreen(
     onLoginSuccess: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var username by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
+    val context = LocalContext.current
+    var rememberUser by remember { mutableStateOf(UserPreferences.isRemembered(context)) }
+    var username by remember { mutableStateOf(if (UserPreferences.isRemembered(context)) UserPreferences.getUsername(context) else "") }
+    var password by remember { mutableStateOf(if (UserPreferences.isRemembered(context)) UserPreferences.getPassword(context) else "") }
     var passwordVisible by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
@@ -73,22 +78,28 @@ fun LoginScreen(
                 // Simulate network authentication
                 delay(1000L)
                 isLoading = false
-//                if (username.equals("admin", ignoreCase = true) || username.contains("@") || username.length >= 3) {
-//                    onLoginSuccess(username)
-//                } else {
-//                    errorMessage = "Credenciales inválidas. Intente nuevamente."
-//                }
                 val servicioAPI = ServicioAPI.getInstance();
                 val base64String = "Basic " + get64BaseString("serviall:8400Abn.,")
                 val validaUser = servicioAPI.login(base64String,username, password);
                 if(validaUser=="")
                 {
                     UserSession.username = username;
+                    if (rememberUser) {
+                        UserPreferences.saveLoginData(context, username, password, true)
+                    } else {
+                        UserPreferences.clear(context)
+                    }
                     onLoginSuccess(username)
                 }
                 else
                     errorMessage = validaUser;
             }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        if (UserPreferences.isRemembered(context) && username.isNotBlank() && password.isNotBlank()) {
+            handleLogin()
         }
     }
 
@@ -261,7 +272,28 @@ fun LoginScreen(
                         )
                     )
 
-                    Spacer(modifier = Modifier.height(28.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Remember User Checkbox
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Checkbox(
+                            checked = rememberUser,
+                            onCheckedChange = { rememberUser = it },
+                            colors = CheckboxDefaults.colors(checkedColor = ServialRed)
+                        )
+                        Text(
+                            text = "Recordar usuario",
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.clickable { rememberUser = !rememberUser }
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(20.dp))
 
                     // Login Button
                     Button(

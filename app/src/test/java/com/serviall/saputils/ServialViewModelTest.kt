@@ -23,13 +23,13 @@ class ServialViewModelTest {
         val initialQty = initialProduct.actualQty
 
         // Update product quantity directly
-        viewModel.updateProductQuantity(item.id, initialProduct.code, initialQty + 2)
+        viewModel.updateProductQuantity(item.id, initialProduct.code, initialProduct.linenum, initialProduct.substitute, initialQty + 2)
         val updatedItem = viewModel.items.value.first { it.id == item.id }
         val updatedProduct = updatedItem.products.first { it.code == initialProduct.code }
         assertEquals(initialQty + 2, updatedProduct.actualQty)
 
         // Test barcode scan and increment
-        viewModel.scanBarcodeAndIncrement(item.id, initialProduct.code)
+        viewModel.scanBarcodeAndIncrement(item.id, initialProduct.code, initialProduct.linenum, initialProduct.substitute)
         val scannedItem = viewModel.items.value.first { it.id == item.id }
         val scannedProduct = scannedItem.products.first { it.code == initialProduct.code }
         assertEquals(initialQty + 3, scannedProduct.actualQty)

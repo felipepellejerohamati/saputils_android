@@ -24,8 +24,8 @@ class MainActivity : ComponentActivity() {
             SaputilsTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     val servialViewModel: ServialViewModel = viewModel()
-                    var isLoggedIn by remember { mutableStateOf(false) }
-                    var loggedInUser by remember { mutableStateOf("") }
+                    var isLoggedIn by remember { mutableStateOf(UserSession.isLoggedIn()) }
+                    var loggedInUser by remember { mutableStateOf(UserSession.username) }
                     var showWarehouseSelectionDialog by remember { mutableStateOf(false) }
 
                     if (!isLoggedIn) {
@@ -37,9 +37,11 @@ class MainActivity : ComponentActivity() {
                         )
                     } else {
                         MainScreen(
-                            username = loggedInUser.ifBlank { "Administrador" },
+                            username = loggedInUser.ifBlank { UserSession.username.ifBlank { "Administrador" } },
                             viewModel = servialViewModel,
                             onLogout = {
+                                UserSession.clearUser()
+                                UserSession.clearBod()
                                 isLoggedIn = false
                                 loggedInUser = ""
                             }
