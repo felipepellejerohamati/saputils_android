@@ -127,7 +127,7 @@ class ServialViewModel : ViewModel() {
         }
     }
 
-    fun recordDelivery(itemId: String, recipientName: String, notes: String) {
+    fun recordDelivery(itemId: String, recipientName: String, notes: String, signatureBase64: String? = null) {
         val timestamp = dateFormat.format(Date())
         _items.update { current ->
             current.map { item ->
@@ -136,7 +136,8 @@ class ServialViewModel : ViewModel() {
                         status = ItemStatus.COMPLETED,
                         recipientName = recipientName.ifBlank { "Receptor Autorizado" },
                         deliveryTimestamp = timestamp,
-                        notes = if (notes.isNotBlank()) "${item.notes} | Entrega: $notes" else item.notes
+                        notes = if (notes.isNotBlank()) "${item.notes} | Entrega: $notes" else item.notes,
+                        signatureBase64 = signatureBase64
                     )
                 } else item
             }
@@ -151,7 +152,7 @@ class ServialViewModel : ViewModel() {
                         if (prod.code.trim().equals(productCode.trim(), ignoreCase = true) &&
                             prod.linenum == linenum &&
                             prod.substitute.trim().equals(substitute.trim(), ignoreCase = true)) {
-                            val maxLimit = if (prod.actualQty > prod.expectedQty) prod.expectedQty else prod.actualQty
+                            val maxLimit = if (prod.actualQty > 0) minOf(prod.expectedQty, prod.actualQty) else prod.expectedQty
                             val clamped = newActualQty.coerceIn(0, maxLimit)
                             prod.copy(delivrdqty = clamped)
                         } else prod
@@ -172,8 +173,7 @@ class ServialViewModel : ViewModel() {
                             (linenum == 0 || prod.linenum == linenum) &&
                             prod.substitute.trim().equals(substitute.trim(), ignoreCase = true)) {
                             found = true
-                            //val maxLimit = if (prod.actualQty > 0) minOf(prod.expectedQty, prod.actualQty) else prod.expectedQty
-                            val maxLimit = if (prod.actualQty > prod.expectedQty) prod.expectedQty else prod.actualQty
+                            val maxLimit = if (prod.actualQty > 0) minOf(prod.expectedQty, prod.actualQty) else prod.expectedQty
                             val newDeliv = minOf(maxLimit, prod.delivrdqty + 1)
                             prod.copy(delivrdqty = newDeliv)
                         } else prod

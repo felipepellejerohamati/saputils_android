@@ -1,7 +1,14 @@
 package com.serviall.saputils.ui.entregar
 
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -41,7 +48,7 @@ import com.serviall.saputils.ui.viewmodel.ServialViewModel
 @Composable
 fun EntregarScreen(
     items: List<ServialItem>,
-    onRecordDelivery: (String, String, String) -> Unit,
+    onRecordDelivery: (String, String, String, String?) -> Unit,
     onUpdateProductQty: (String, String, Int, String, Int) -> Unit,
     onScanBarcode: (String, String) -> Unit,
     modifier: Modifier = Modifier
@@ -211,8 +218,8 @@ fun EntregarScreen(
         RecordDeliveryDialog(
             item = selectedItemForDelivery!!,
             onDismiss = { selectedItemForDelivery = null },
-            onConfirm = { recipient, notes ->
-                onRecordDelivery(selectedItemForDelivery!!.id, recipient, notes)
+            onConfirm = { recipient, notes, signature ->
+                onRecordDelivery(selectedItemForDelivery!!.id, recipient, notes, signature)
                 selectedItemForDelivery = null
             }
         )
@@ -467,10 +474,11 @@ onQuantityChanged: (Int) -> Unit
 fun RecordDeliveryDialog(
     item: ServialItem,
     onDismiss: () -> Unit,
-    onConfirm: (String, String) -> Unit
+    onConfirm: (String, String, String?) -> Unit
 ) {
     var recipientName by remember { mutableStateOf("") }
     var deliveryNotes by remember { mutableStateOf("") }
+    var signatureBase64 by remember { mutableStateOf<String?>(null) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -479,6 +487,7 @@ fun RecordDeliveryDialog(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
                     .padding(vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
@@ -492,19 +501,34 @@ fun RecordDeliveryDialog(
                     onValueChange = { recipientName = it },
                     label = { Text("Nombre de quien recibe (Firma/Receptor)") },
                     singleLine = true,
-                    shape = RoundedCornerShape(10.dp)
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
                     value = deliveryNotes,
                     onValueChange = { deliveryNotes = it },
                     label = { Text("Notas de entrega / Novedades") },
-                    shape = RoundedCornerShape(10.dp)
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Firma del Receptor:",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                SignatureCanvas(
+                    onSignatureChanged = { base64 ->
+                        signatureBase64 = base64
+                    },
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
         },
         confirmButton = {
             Button(
-                onClick = { onConfirm(recipientName, deliveryNotes) },
+                onClick = { onConfirm(recipientName, deliveryNotes, signatureBase64) },
                 colors = ButtonDefaults.buttonColors(containerColor = ServialRed)
             ) {
                 Text("Confirmar Entrega")
@@ -517,4 +541,138 @@ fun RecordDeliveryDialog(
         },
         shape = RoundedCornerShape(20.dp)
     )
+}
+
+@Composable
+fun SignatureCanvas(
+    onSignatureChanged: (String?) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val paths = remember { mutableStateListOf<List<androidx.compose.ui.geometry.Offset>>() }
+    var currentPath by remember { mutableStateOf<MutableList<androidx.compose.ui.geometry.Offset>?>(null) }
+
+    Column(modifier = modifier) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(150.dp)
+                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
+                .pointerInput(Unit) {
+                    detectDragGestures(
+                        onDragStart = { offset ->
+                            currentPath = mutableListOf(offset)
+                        },
+                        onDrag = { change, _ ->
+                            change.consume()
+                            currentPath?.let { path ->
+                                path.add(change.position)
+                            }
+                        },
+                        onDragEnd = {
+                            currentPath?.let { path ->
+                                if (path.isNotEmpty()) {
+                                    paths.add(path.toList())
+                                    currentPath = null
+                                    onSignatureChanged(generateSignatureBase64(paths))
+                                }
+                            }
+                        },
+                        onDragCancel = {
+                            currentPath = null
+                        }
+                    )
+                }
+        ) {
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val stroke = androidx.compose.ui.graphics.drawscope.Stroke(
+                    width = 3.dp.toPx(),
+                    cap = androidx.compose.ui.graphics.StrokeCap.Round,
+                    join = androidx.compose.ui.graphics.StrokeJoin.Round
+                )
+                paths.forEach { pathPoints ->
+                    if (pathPoints.size > 1) {
+                        val composePath = androidx.compose.ui.graphics.Path().apply {
+                            moveTo(pathPoints.first().x, pathPoints.first().y)
+                            for (i in 1 until pathPoints.size) {
+                                lineTo(pathPoints[i].x, pathPoints[i].y)
+                            }
+                        }
+                        drawPath(path = composePath, color = Color.Black, style = stroke)
+                    }
+                }
+                currentPath?.let { pathPoints ->
+                    if (pathPoints.size > 1) {
+                        val composePath = androidx.compose.ui.graphics.Path().apply {
+                            moveTo(pathPoints.first().x, pathPoints.first().y)
+                            for (i in 1 until pathPoints.size) {
+                                lineTo(pathPoints[i].x, pathPoints[i].y)
+                            }
+                        }
+                        drawPath(path = composePath, color = Color.Black, style = stroke)
+                    }
+                }
+            }
+
+            if (paths.isEmpty() && currentPath == null) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text(
+                        text = "Firme aquí con el dedo o lápiz",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                        fontSize = 13.sp
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(2.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End
+        ) {
+            TextButton(
+                onClick = {
+                    paths.clear()
+                    currentPath = null
+                    onSignatureChanged(null)
+                }
+            ) {
+                Text("Borrar Firma", fontSize = 12.sp, color = ServialRed)
+            }
+        }
+    }
+}
+
+fun generateSignatureBase64(paths: List<List<androidx.compose.ui.geometry.Offset>>): String {
+    val width = 600
+    val height = 300
+    val bitmap = android.graphics.Bitmap.createBitmap(width, height, android.graphics.Bitmap.Config.ARGB_8888)
+    val canvas = android.graphics.Canvas(bitmap)
+    canvas.drawColor(android.graphics.Color.WHITE)
+
+    val paint = android.graphics.Paint().apply {
+        color = android.graphics.Color.BLACK
+        strokeWidth = 6f
+        style = android.graphics.Paint.Style.STROKE
+        isAntiAlias = true
+        strokeCap = android.graphics.Paint.Cap.ROUND
+        strokeJoin = android.graphics.Paint.Join.ROUND
+    }
+
+    paths.forEach { points ->
+        if (points.size > 1) {
+            val path = android.graphics.Path().apply {
+                moveTo(points.first().x, points.first().y)
+                for (i in 1 until points.size) {
+                    lineTo(points[i].x, points[i].y)
+                }
+            }
+            canvas.drawPath(path, paint)
+        }
+    }
+
+    val outputStream = java.io.ByteArrayOutputStream()
+    bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, outputStream)
+    val bytes = outputStream.toByteArray()
+    return android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP)
 }

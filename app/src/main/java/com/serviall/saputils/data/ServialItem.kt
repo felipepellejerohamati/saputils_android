@@ -30,5 +30,6 @@ data class ServialItem(
     val recipientName: String? = null,
     val deliveryTimestamp: String? = null,
     val weightKg: Double = 1.5,
-    val products: List<ProductItem> = emptyList()
+    val products: List<ProductItem> = emptyList(),
+    val signatureBase64: String? = null
 )

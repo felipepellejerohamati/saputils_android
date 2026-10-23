@@ -373,8 +373,8 @@ fun MainScreen(
                         } else {
                             EntregarScreen(
                                 items = items,
-                                onRecordDelivery = { id, recipient, notes ->
-                                    viewModel.recordDelivery(id, recipient, notes)
+                                onRecordDelivery = { id, recipient, notes, signature ->
+                                    viewModel.recordDelivery(id, recipient, notes, signature)
                                 },
                                 onUpdateProductQty = { id, code, linenum, substitute, qty ->
                                     viewModel.updateProductQuantity(id, code, linenum, substitute, qty)
