@@ -78,6 +78,9 @@ fun MainScreen(
                 if (fetchedOrders.isNotEmpty()) {
                     viewModel.setItems(fetchedOrders)
                 }
+                else {
+                    viewModel.setItems(emptyList())
+                }
             } catch (e: Exception) {
                 errorMessage = e.message ?: "Error al cargar órdenes"
             } finally {

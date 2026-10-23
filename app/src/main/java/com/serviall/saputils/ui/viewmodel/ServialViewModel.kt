@@ -169,6 +169,9 @@ class ServialViewModel : ViewModel() {
                 if (fetchedOrders.isNotEmpty()) {
                     _items.value = fetchedOrders
                 }
+                else {
+                    _items.value= emptyList()
+                }
             } catch (e: Exception) {
                 EscribirLog(mensaje = "Error al postear delivery o actualizar órdenes en API: ${e.message}")
             }
