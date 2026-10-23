@@ -328,7 +328,7 @@ fun LoginScreen(
                     Spacer(modifier = Modifier.height(20.dp))
 
                     Text(
-                        text = "Versión 1.0 • Serviall 2026",
+                        text = "Versión 1.7 • Serviall 2026",
                         fontSize = 11.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                         textAlign = TextAlign.Center

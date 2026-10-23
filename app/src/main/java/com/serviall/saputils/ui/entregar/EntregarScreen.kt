@@ -48,7 +48,7 @@ import com.serviall.saputils.ui.viewmodel.ServialViewModel
 @Composable
 fun EntregarScreen(
     items: List<ServialItem>,
-    onRecordDelivery: (String, String, String, String?) -> Unit,
+    onRecordDelivery: (String, String, String, String?, String?) -> Unit,
     onUpdateProductQty: (String, String, Int, String, Int) -> Unit,
     onScanBarcode: (String, String) -> Unit,
     modifier: Modifier = Modifier
@@ -218,8 +218,8 @@ fun EntregarScreen(
         RecordDeliveryDialog(
             item = selectedItemForDelivery!!,
             onDismiss = { selectedItemForDelivery = null },
-            onConfirm = { recipient, notes, signature ->
-                onRecordDelivery(selectedItemForDelivery!!.id, recipient, notes, signature)
+            onConfirm = { recipient, notes, signature, deliveredBy ->
+                onRecordDelivery(selectedItemForDelivery!!.id, recipient, notes, signature, deliveredBy)
                 selectedItemForDelivery = null
             }
         )
@@ -343,8 +343,9 @@ fun DeliveryItemCard(
             Spacer(modifier = Modifier.height(4.dp))
 
             Text(
-                text = item.notes.ifBlank { "Ref: ${item.reference}" },
-                fontSize = 13.sp,
+                text = "Ref: " + item.reference.ifBlank { " ${item.notes}" },
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
@@ -438,7 +439,7 @@ onQuantityChanged: (Int) -> Unit
                 }
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = "Solicitado: ${product.expectedQty} | Inventario: ${product.actualQty}",
+                    text = "Solicitado: ${product.expectedQty} | Entregado: ${product.delivrdqty} | Inventario: ${product.actualQty}",
                     fontSize = 11.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -449,19 +450,19 @@ onQuantityChanged: (Int) -> Unit
                 horizontalArrangement = Arrangement.spacedBy(2.dp)
             ) {
                 IconButton(
-                    onClick = { onQuantityChanged(product.delivrdqty - 1) },
+                    onClick = { onQuantityChanged(product.qttytrans - 1) },
                     modifier = Modifier.size(28.dp)
                 ) {
                     Icon(imageVector = Icons.Rounded.Remove, contentDescription = "Decrease", modifier = Modifier.size(16.dp))
                 }
                 Text(
-                    text = "${ product.delivrdqty }",
+                    text = "${ product.qttytrans }",
                     fontWeight = FontWeight.Bold,
                     fontSize = 13.sp,
                     modifier = Modifier.padding(horizontal = 4.dp)
                 )
                 IconButton(
-                    onClick = { onQuantityChanged( product.delivrdqty + 1) },
+                    onClick = { onQuantityChanged( product.qttytrans + 1) },
                     modifier = Modifier.size(28.dp)
                 ) {
                     Icon(imageVector = Icons.Rounded.Add, contentDescription = "Increase", modifier = Modifier.size(16.dp))
@@ -474,10 +475,11 @@ onQuantityChanged: (Int) -> Unit
 fun RecordDeliveryDialog(
     item: ServialItem,
     onDismiss: () -> Unit,
-    onConfirm: (String, String, String?) -> Unit
+    onConfirm: (String, String, String?, String) -> Unit
 ) {
     var recipientName by remember { mutableStateOf("") }
     var deliveryNotes by remember { mutableStateOf("") }
+    var deliveredBy by remember { mutableStateOf(UserSession.username.ifBlank { "Operario" }) }
     var signatureBase64 by remember { mutableStateOf<String?>(null) }
 
     AlertDialog(
@@ -495,6 +497,14 @@ fun RecordDeliveryDialog(
                     text = "Cliente: ${item.client}",
                     fontSize = 14.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                OutlinedTextField(
+                    value = deliveredBy,
+                    onValueChange = { deliveredBy = it },
+                    label = { Text("Nombre de quien entrega (Operario / Conductor)") },
+                    singleLine = true,
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
                     value = recipientName,
@@ -528,7 +538,7 @@ fun RecordDeliveryDialog(
         },
         confirmButton = {
             Button(
-                onClick = { onConfirm(recipientName, deliveryNotes, signatureBase64) },
+                onClick = { onConfirm(recipientName, deliveryNotes, signatureBase64, deliveredBy) },
                 colors = ButtonDefaults.buttonColors(containerColor = ServialRed)
             ) {
                 Text("Confirmar Entrega")

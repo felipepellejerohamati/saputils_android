@@ -1,12 +1,18 @@
 package com.serviall.saputils.ui.viewmodel
 
+import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.ViewModel
+import com.serviall.saputils.apicalls.ServicioAPI
 import com.serviall.saputils.data.ItemStatus
 import com.serviall.saputils.data.ProductItem
 import com.serviall.saputils.data.ServialItem
+import com.serviall.saputils.globals.UserSession
+import com.serviall.saputils.utils.EscribirLog
+import com.serviall.saputils.utils.get64BaseString
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -127,19 +133,44 @@ class ServialViewModel : ViewModel() {
         }
     }
 
-    fun recordDelivery(itemId: String, recipientName: String, notes: String, signatureBase64: String? = null) {
+    suspend fun recordDelivery(
+        itemId: String,
+        recipientName: String,
+        notes: String,
+        signatureBase64: String? = null,
+        deliveredBy: String? = null
+    ) {
         val timestamp = dateFormat.format(Date())
+        var updatedItem: ServialItem? = null
+
         _items.update { current ->
             current.map { item ->
                 if (item.id == itemId) {
-                    item.copy(
+                    val copy = item.copy(
                         status = ItemStatus.COMPLETED,
                         recipientName = recipientName.ifBlank { "Receptor Autorizado" },
                         deliveryTimestamp = timestamp,
                         notes = if (notes.isNotBlank()) "${item.notes} | Entrega: $notes" else item.notes,
-                        signatureBase64 = signatureBase64
+                        signatureBase64 = signatureBase64,
+                        deliveredBy = deliveredBy?.ifBlank { UserSession.username } ?: UserSession.username
                     )
+                    updatedItem = copy
+                    copy
                 } else item
+            }
+        }
+
+        updatedItem?.let { item ->
+            try {
+                val servicioAPI = ServicioAPI.getInstance()
+                val base64String = "Basic " + get64BaseString("serviall:8400Abn.,")
+                servicioAPI.delivery(base64String, item)
+                val fetchedOrders = servicioAPI.orders(base64String, _activeWarehouse.value)
+                if (fetchedOrders.isNotEmpty()) {
+                    _items.value = fetchedOrders
+                }
+            } catch (e: Exception) {
+                EscribirLog(mensaje = "Error al postear delivery o actualizar órdenes en API: ${e.message}")
             }
         }
     }
@@ -154,7 +185,7 @@ class ServialViewModel : ViewModel() {
                             prod.substitute.trim().equals(substitute.trim(), ignoreCase = true)) {
                             val maxLimit = if (prod.actualQty > 0) minOf(prod.expectedQty, prod.actualQty) else prod.expectedQty
                             val clamped = newActualQty.coerceIn(0, maxLimit)
-                            prod.copy(delivrdqty = clamped)
+                            prod.copy(qttytrans = clamped)
                         } else prod
                     }
                     item.copy(products = updatedProducts)
@@ -174,8 +205,8 @@ class ServialViewModel : ViewModel() {
                             prod.substitute.trim().equals(substitute.trim(), ignoreCase = true)) {
                             found = true
                             val maxLimit = if (prod.actualQty > 0) minOf(prod.expectedQty, prod.actualQty) else prod.expectedQty
-                            val newDeliv = minOf(maxLimit, prod.delivrdqty + 1)
-                            prod.copy(delivrdqty = newDeliv)
+                            val newDeliv = minOf(maxLimit, prod.qttytrans + 1)
+                            prod.copy(qttytrans = newDeliv)
                         } else prod
                     }
                     val finalProducts = if (!found) {
@@ -183,7 +214,7 @@ class ServialViewModel : ViewModel() {
                             name = "Producto Escaneado ($productCode)",
                             expectedQty = updatedProducts.first().expectedQty,
                             actualQty = updatedProducts.first().actualQty,
-                            delivrdqty = 1,
+                            qttytrans = 1,
                             linenum = linenum, substitute = substitute)
                     } else {
                         updatedProducts

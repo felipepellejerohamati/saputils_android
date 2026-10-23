@@ -16,7 +16,7 @@ android {
         minSdk = 28
         targetSdk = 37
         versionCode = 1
-        versionName = "1.0"
+        versionName = "1.7"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -35,6 +35,16 @@ android {
     }
     buildFeatures {
         compose = true
+    }
+}
+
+androidComponents {
+    onVariants { variant ->
+        val versionName = "1.7"
+        val buildType = variant.name
+        variant.outputs.forEach { output ->
+            output.outputFileName.set("PruebaTiti$versionName.apk")
+        }
     }
 }
 

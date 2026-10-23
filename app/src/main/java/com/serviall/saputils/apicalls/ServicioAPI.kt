@@ -9,8 +9,10 @@ import com.serviall.saputils.data.ServialItem
 import com.serviall.saputils.utils.EscribirLog
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.Header
+import retrofit2.http.POST
 import retrofit2.http.Query
 
 class StringTypeAdapter : TypeAdapter<String>() {
@@ -38,7 +40,9 @@ interface ServicioAPI {
     @GET("orders")
     suspend fun orders(@Header("Authorization") token: String,
                         @Query(value="whscode") whs:String): List<ServialItem>
-
+    @POST("delivery")
+    suspend fun delivery(@Header("Authorization") token: String,
+                         @Body ServialItem: ServialItem) : String
     companion object {
         private var servicioAPI: ServicioAPI? = null
         private var url: String = "https://alliotapi.serviall.cl/faena/"

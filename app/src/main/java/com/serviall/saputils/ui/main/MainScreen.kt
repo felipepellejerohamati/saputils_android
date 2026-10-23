@@ -373,8 +373,10 @@ fun MainScreen(
                         } else {
                             EntregarScreen(
                                 items = items,
-                                onRecordDelivery = { id, recipient, notes, signature ->
-                                    viewModel.recordDelivery(id, recipient, notes, signature)
+                                onRecordDelivery = { id, recipient, notes, signature, deliveredBy ->
+                                    coroutineScope.launch {
+                                        viewModel.recordDelivery(id, recipient, notes, signature, deliveredBy)
+                                    }
                                 },
                                 onUpdateProductQty = { id, code, linenum, substitute, qty ->
                                     viewModel.updateProductQuantity(id, code, linenum, substitute, qty)
