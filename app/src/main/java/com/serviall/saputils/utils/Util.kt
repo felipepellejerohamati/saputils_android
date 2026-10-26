@@ -16,7 +16,7 @@ fun MostrarMensaje(context: Context, mensaje: String,
     toast.show()
 }
 
-fun EscribirLog(tag: String = "ProyectoA", mensaje: String) {
+fun EscribirLog(tag: String = "ServiallUtils", mensaje: String) {
     Log.d(tag, mensaje)
 }
 

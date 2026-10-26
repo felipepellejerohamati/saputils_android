@@ -22,6 +22,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import android.content.res.Configuration
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -61,6 +65,7 @@ fun MainScreen(
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val coroutineScope = rememberCoroutineScope()
 
+    val context = LocalContext.current
     val activeWarehouse by viewModel.activeWarehouse.collectAsState()
     var showWarehouseDialog by remember { mutableStateOf(false) }
     val items by viewModel.items.collectAsState()
@@ -95,8 +100,16 @@ fun MainScreen(
 
 
 
+    val configuration = LocalConfiguration.current
+    val isPortrait = configuration.orientation == Configuration.ORIENTATION_PORTRAIT
     val windowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
     val isLargeScreen = windowSizeClass.windowWidthSizeClass != WindowWidthSizeClass.COMPACT
+
+    LaunchedEffect(isLargeScreen, isPortrait) {
+        if (isLargeScreen && isPortrait) {
+            isMenuCollapsed = true
+        }
+    }
 
     val drawerContent: @Composable () -> Unit = {
         ModalDrawerSheet(
@@ -378,7 +391,12 @@ fun MainScreen(
                                 items = items,
                                 onRecordDelivery = { id, recipient, notes, signature, deliveredBy ->
                                     coroutineScope.launch {
-                                        viewModel.recordDelivery(id, recipient, notes, signature, deliveredBy)
+                                        val response = viewModel.recordDelivery(id, recipient, notes, signature, deliveredBy)
+                                        if (response.isBlank()) {
+                                            Toast.makeText(context, "Envío exitoso", Toast.LENGTH_LONG).show()
+                                        } else {
+                                            Toast.makeText(context, response, Toast.LENGTH_LONG).show()
+                                        }
                                     }
                                 },
                                 onUpdateProductQty = { id, code, linenum, substitute, qty ->

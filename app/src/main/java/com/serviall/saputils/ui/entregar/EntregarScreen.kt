@@ -425,14 +425,18 @@ onQuantityChanged: (Int) -> Unit
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(text = product.code, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = ServialRed)
+                    if(product.substitute.isNotBlank()){
+                        Text(text = product.substitute, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = ServialRed)
+                    }
+                    else
+                        Text(text = product.code, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = ServialRed)
                     Text(text = "•", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(text = product.name, fontSize = 12.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface)
                 }
                 if (product.substitute.isNotBlank()) {
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = "Código Cliente: ${product.substitute}",
+                        text = "Código Serviall: ${product.code}",
                         fontSize = 11.sp,
                         color = ServialRed
                     )

@@ -7,6 +7,7 @@ import com.google.gson.stream.JsonToken
 import com.google.gson.stream.JsonWriter
 import com.serviall.saputils.data.ServialItem
 import com.serviall.saputils.utils.EscribirLog
+import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.Body
@@ -14,6 +15,7 @@ import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.POST
 import retrofit2.http.Query
+import java.util.concurrent.TimeUnit
 
 class StringTypeAdapter : TypeAdapter<String>() {
     override fun write(out: JsonWriter, value: String?) {
@@ -54,8 +56,15 @@ interface ServicioAPI {
                         .registerTypeAdapter(String::class.java, StringTypeAdapter())
                         .create()
 
+                    val okHttpClient = OkHttpClient.Builder()
+                        .connectTimeout(60, TimeUnit.SECONDS)
+                        .readTimeout(60, TimeUnit.SECONDS)
+                        .writeTimeout(60, TimeUnit.SECONDS)
+                        .build()
+
                     servicioAPI = Retrofit.Builder()
                         .baseUrl(url)
+                        .client(okHttpClient)
                         .addConverterFactory(GsonConverterFactory.create(gson))
                         .build()
                         .create(ServicioAPI::class.java)

@@ -139,7 +139,7 @@ class ServialViewModel : ViewModel() {
         notes: String,
         signatureBase64: String? = null,
         deliveredBy: String? = null
-    ) {
+    ): String {
         val timestamp = dateFormat.format(Date())
         var updatedItem: ServialItem? = null
 
@@ -150,7 +150,12 @@ class ServialViewModel : ViewModel() {
                         status = ItemStatus.COMPLETED,
                         recipientName = recipientName.ifBlank { "Receptor Autorizado" },
                         deliveryTimestamp = timestamp,
-                        notes = if (notes.isNotBlank()) "${item.notes} | Entrega: $notes" else item.notes,
+//                        notes = when {
+//                            notes.isNotBlank() && item.notes.isNotBlank() -> "${item.notes} | Entrega: $notes"
+//                            notes.isNotBlank() -> notes
+//                            else -> item.notes
+                        //},
+                        notes= notes,
                         signatureBase64 = signatureBase64,
                         deliveredBy = deliveredBy?.ifBlank { UserSession.username } ?: UserSession.username
                     )
@@ -160,22 +165,44 @@ class ServialViewModel : ViewModel() {
             }
         }
 
+        var apiResponse = ""
         updatedItem?.let { item ->
             try {
                 val servicioAPI = ServicioAPI.getInstance()
                 val base64String = "Basic " + get64BaseString("serviall:8400Abn.,")
-                servicioAPI.delivery(base64String, item)
-                val fetchedOrders = servicioAPI.orders(base64String, _activeWarehouse.value)
-                if (fetchedOrders.isNotEmpty()) {
-                    _items.value = fetchedOrders
-                }
-                else {
-                    _items.value= emptyList()
+                val response = servicioAPI.delivery(base64String, item)
+                apiResponse = response
+
+                if (apiResponse.isBlank()) {
+                    val fetchedOrders = servicioAPI.orders(base64String, _activeWarehouse.value)
+                    if (fetchedOrders.isNotEmpty()) {
+                        _items.value = fetchedOrders
+                    } else {
+                        _items.value = emptyList()
+                    }
+                } else {
+                    _items.update { current ->
+                        current.map { currentItem ->
+                            if (currentItem.id == itemId) {
+                                currentItem.copy(status = ItemStatus.PENDING)
+                            } else currentItem
+                        }
+                    }
+                    EscribirLog(mensaje = "Delivery response message: $apiResponse")
                 }
             } catch (e: Exception) {
-                EscribirLog(mensaje = "Error al postear delivery o actualizar órdenes en API: ${e.message}")
+                apiResponse = e.message ?: "Error de red al enviar entrega"
+                _items.update { current ->
+                    current.map { currentItem ->
+                        if (currentItem.id == itemId) {
+                            currentItem.copy(status = ItemStatus.PENDING)
+                        } else currentItem
+                    }
+                }
+                EscribirLog(mensaje = "Error al postear delivery en API: $apiResponse")
             }
         }
+        return apiResponse
     }
 
     fun updateProductQuantity(itemId: String, productCode: String, linenum: Int, substitute: String, newActualQty: Int) {
