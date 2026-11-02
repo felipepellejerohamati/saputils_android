@@ -16,7 +16,7 @@ android {
         minSdk = 28
         targetSdk = 37
         versionCode = 1
-        versionName = "1.7"
+        versionName = "1.9.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -40,7 +40,7 @@ android {
 
 androidComponents {
     onVariants { variant ->
-        val versionName = "1.7"
+        val versionName = "1.9.1"
         val buildType = variant.name
         variant.outputs.forEach { output ->
             output.outputFileName.set("PruebaTiti$versionName.apk")
@@ -85,6 +85,7 @@ dependencies {
     implementation(libs.moshi.kotlin)
     implementation(libs.okhttp)
     implementation(libs.play.services.location)
+    implementation(libs.mlkit.text.recognition)
     implementation(libs.retrofit)
     testImplementation(libs.androidx.core)
     testImplementation(libs.androidx.junit)

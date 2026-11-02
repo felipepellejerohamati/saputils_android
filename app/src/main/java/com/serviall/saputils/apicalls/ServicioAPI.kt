@@ -8,6 +8,7 @@ import com.google.gson.stream.JsonWriter
 import com.serviall.saputils.data.ServialItem
 import com.serviall.saputils.utils.EscribirLog
 import okhttp3.OkHttpClient
+import okhttp3.RequestBody
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.Body
@@ -45,6 +46,14 @@ interface ServicioAPI {
     @POST("delivery")
     suspend fun delivery(@Header("Authorization") token: String,
                          @Body ServialItem: ServialItem) : String
+
+    @POST("dataissues")
+    suspend fun tesseractocr(
+        @Header("Authorization") token: String,
+        @Query("whscode") whscode: String,
+        @Body imageBody: RequestBody
+    ): String
+
     companion object {
         private var servicioAPI: ServicioAPI? = null
         private var url: String = "https://alliotapi.serviall.cl/faena/"
