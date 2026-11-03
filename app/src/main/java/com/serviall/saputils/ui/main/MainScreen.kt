@@ -35,9 +35,11 @@ import com.serviall.saputils.apicalls.ServicioAPI
 import com.serviall.saputils.data.ServialItem
 import com.serviall.saputils.globals.UserSession
 import com.serviall.saputils.ui.consultar.ConsultarScreen
+import androidx.compose.material.icons.rounded.Bookmark
 import androidx.compose.material.icons.rounded.DocumentScanner
 import com.serviall.saputils.ui.entregar.EntregarScreen
 import com.serviall.saputils.ui.reconocer.ReconocerScreen
+import com.serviall.saputils.ui.reservas.ReservasScreen
 import com.serviall.saputils.ui.recibir.RecibirScreen
 import com.serviall.saputils.ui.theme.ServialRed
 import com.serviall.saputils.ui.viewmodel.ServialViewModel
@@ -51,6 +53,7 @@ enum class ServialTab(
     //RECIBIR("Recibir", Icons.Rounded.Inbox),
     ENTREGAR("Entregar", Icons.Rounded.LocalShipping),
     RECONOCER("Reconocer", Icons.Rounded.DocumentScanner),
+    RESERVAS("Reservas", Icons.Rounded.Bookmark),
     //CONSULTAR("Consultar", Icons.Rounded.Search)
 }
 
@@ -414,7 +417,8 @@ fun MainScreen(
 //                    ServialTab.CONSULTAR -> ConsultarScreen(
 //                        items = items
 //                    )
-                    ServialTab.RECONOCER -> ReconocerScreen()
+                    ServialTab.RECONOCER -> ReconocerScreen(viewModel = viewModel)
+                    ServialTab.RESERVAS -> ReservasScreen(activeWarehouse = activeWarehouse)
                 }
             }
         }

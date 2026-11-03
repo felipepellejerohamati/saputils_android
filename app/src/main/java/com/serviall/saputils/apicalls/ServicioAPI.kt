@@ -43,6 +43,9 @@ interface ServicioAPI {
     @GET("orders")
     suspend fun orders(@Header("Authorization") token: String,
                         @Query(value="whscode") whs:String): List<ServialItem>
+    @GET("reservasabiertas")
+    suspend fun reservasabiertas(@Header("Authorization") token: String,
+                       @Query(value="whscode") whs:String): List<ServialItem>
     @POST("delivery")
     suspend fun delivery(@Header("Authorization") token: String,
                          @Body ServialItem: ServialItem) : String
