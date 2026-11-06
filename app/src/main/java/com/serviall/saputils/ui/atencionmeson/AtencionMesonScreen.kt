@@ -365,7 +365,7 @@ fun AtencionMesonScreen(
                                     color = statusColor.copy(alpha = 0.15f)
                                 ) {
                                     Text(
-                                        text = "${item.tipo} • ${item.status.label}",
+                                        text = "${item.tipo} • ${(item.status ?: ItemStatus.PENDING).label}",
                                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold,

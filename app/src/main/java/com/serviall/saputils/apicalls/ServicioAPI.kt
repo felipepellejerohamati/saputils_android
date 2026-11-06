@@ -52,6 +52,10 @@ interface ServicioAPI {
     @POST("delivery")
     suspend fun delivery(@Header("Authorization") token: String,
                          @Body ServialItem: ServialItem) : String
+    @POST("postReserva")
+    suspend fun postReserva(@Header("Authorization") token: String,
+                            @Query(value="whscode") whs:String,
+                         @Body ServialItem: ServialItem) : String
 
     @POST("dataissues")
     suspend fun tesseractocr(
@@ -75,6 +79,9 @@ interface ServicioAPI {
                 try {
                     val gson = GsonBuilder()
                         .registerTypeAdapter(String::class.java, StringTypeAdapter())
+                        .registerTypeAdapter(com.serviall.saputils.data.ItemStatus::class.java, com.serviall.saputils.data.ItemStatusAdapter())
+                        .registerTypeAdapter(com.serviall.saputils.data.ProductItem::class.java, com.serviall.saputils.data.ProductItemDeserializer())
+                        .registerTypeAdapter(ServialItem::class.java, com.serviall.saputils.data.ServialItemDeserializer())
                         .create()
 
                     val okHttpClient = OkHttpClient.Builder()

@@ -284,7 +284,7 @@ fun ConsultItemCard(
                     color = statusColor.copy(alpha = 0.12f)
                 ) {
                     Text(
-                        text = item.status.label,
+                        text = (item.status ?: ItemStatus.PENDING).label,
                         color = statusColor,
                         fontWeight = FontWeight.Bold,
                         fontSize = 12.sp,
@@ -365,7 +365,7 @@ fun ItemDetailDialog(
             ) {
                 DetailRow("Referencia:", item.reference)
                 DetailRow("Cliente:", item.client)
-                DetailRow("Estado Actual:", item.status.label)
+                DetailRow("Estado Actual:", (item.status ?: ItemStatus.PENDING).label)
                 DetailRow("Fecha Ingreso:", item.date)
                 DetailRow("Peso:", "${item.weightKg} kg")
                 DetailRow("Notas:", item.notes)

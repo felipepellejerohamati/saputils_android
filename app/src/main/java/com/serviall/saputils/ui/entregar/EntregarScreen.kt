@@ -382,7 +382,7 @@ fun DeliveryItemCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Estado: ${item.status.label}",
+                    text = "Estado: ${(item.status ?: ItemStatus.PENDING).label}",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Medium,
                     color = ServialRed
