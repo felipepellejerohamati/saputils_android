@@ -258,6 +258,7 @@ fun ConsultItemCard(
         ItemStatus.DELIVERING -> Color(0xFFD97706)
         ItemStatus.COMPLETED -> Color(0xFF10B981)
         ItemStatus.PENDING -> Color(0xFF6B7280)
+        else -> ServialRed
     }
 
     Card(

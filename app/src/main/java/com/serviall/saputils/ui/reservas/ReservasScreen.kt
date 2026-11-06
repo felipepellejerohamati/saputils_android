@@ -157,7 +157,7 @@ fun ReservasScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "Reserva #${item.number}",
+                                    text = "Reserva #${item.reference}",
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 16.sp,
                                     color = ServialRed
@@ -218,7 +218,7 @@ fun ReservasScreen(
                                 Button(
                                     onClick = {
                                         reservasItems = reservasItems.filter { it.id != item.id }
-                                        Toast.makeText(context, "Reserva #${item.number} confirmada a orden exitosamente", Toast.LENGTH_LONG).show()
+                                        Toast.makeText(context, "Reserva #${item.reference} confirmada a orden exitosamente", Toast.LENGTH_LONG).show()
                                     },
                                     colors = ButtonDefaults.buttonColors(containerColor = ServialRed),
                                     modifier = Modifier.weight(1f),
@@ -232,7 +232,7 @@ fun ReservasScreen(
                                 IconButton(
                                     onClick = {
                                         reservasItems = reservasItems.filter { it.id != item.id }
-                                        Toast.makeText(context, "Reserva #${item.number} descartada", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, "Reserva #${item.reference} descartada", Toast.LENGTH_SHORT).show()
                                     }
                                 ) {
                                     Icon(imageVector = Icons.Rounded.Delete, contentDescription = "Descartar", tint = MaterialTheme.colorScheme.error)
@@ -270,7 +270,7 @@ fun ReservasScreen(
                         ) {
                             Column(modifier = Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                 Text(text = prod.name.ifBlank { prod.code }, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                                Text(text = "Código: ${prod.code} | Esperado: ${prod.expectedQty}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(text = "Código: ${prod.substitute.ifEmpty { prod.code }} | Esperado: ${prod.expectedQty}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
                     }

@@ -46,6 +46,9 @@ interface ServicioAPI {
     @GET("reservasabiertas")
     suspend fun reservasabiertas(@Header("Authorization") token: String,
                        @Query(value="whscode") whs:String): List<ServialItem>
+    @GET("OpenDocuments")
+    suspend fun OpenDocuments(@Header("Authorization") token: String,
+                                 @Query(value="whscode") whs:String): List<ServialItem>
     @POST("delivery")
     suspend fun delivery(@Header("Authorization") token: String,
                          @Body ServialItem: ServialItem) : String
@@ -56,6 +59,12 @@ interface ServicioAPI {
         @Query("whscode") whscode: String,
         @Body imageBody: RequestBody
     ): String
+    @POST("dataissuesobj")
+    suspend fun dataissuesobj(
+        @Header("Authorization") token: String,
+        @Query("whscode") whscode: String,
+        @Body imageBody: RequestBody
+    ): ServialItem
 
     companion object {
         private var servicioAPI: ServicioAPI? = null

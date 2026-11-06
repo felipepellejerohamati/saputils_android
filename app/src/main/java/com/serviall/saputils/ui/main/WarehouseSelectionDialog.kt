@@ -46,7 +46,7 @@ fun WarehouseSelectionDialog(
         title = {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Icon(imageVector = Icons.Rounded.Store, contentDescription = null, tint = ServialRed)
-                Text("Seleccionar Bodega Activa", fontWeight = FontWeight.Bold)
+                Text("¿Que bodega vas a atender?", fontWeight = FontWeight.Bold)
             }
         },
         text = {
@@ -55,7 +55,7 @@ fun WarehouseSelectionDialog(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
-                    text = "Seleccione la bodega operativa para las transacciones de inventario:",
+                    text = "Pedidos, stock y movimientos se cargan para la bodega que elijas.",
                     fontSize = 13.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -120,7 +120,7 @@ fun WarehouseSelectionDialog(
                     onClick = { onDismiss() },
                     colors = ButtonDefaults.buttonColors(containerColor = ServialRed)
                 ) {
-                    Text("Aceptar")
+                    Text("Atender")
                 }
             }
         },

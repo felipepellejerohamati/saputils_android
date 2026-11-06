@@ -37,6 +37,8 @@ import com.serviall.saputils.globals.UserSession
 import com.serviall.saputils.ui.consultar.ConsultarScreen
 import androidx.compose.material.icons.rounded.Bookmark
 import androidx.compose.material.icons.rounded.DocumentScanner
+import androidx.compose.material.icons.rounded.Storefront
+import com.serviall.saputils.ui.atencionmeson.AtencionMesonScreen
 import com.serviall.saputils.ui.entregar.EntregarScreen
 import com.serviall.saputils.ui.reconocer.ReconocerScreen
 import com.serviall.saputils.ui.reservas.ReservasScreen
@@ -50,11 +52,7 @@ enum class ServialTab(
     val title: String,
     val icon: androidx.compose.ui.graphics.vector.ImageVector
 ) {
-    //RECIBIR("Recibir", Icons.Rounded.Inbox),
-    ENTREGAR("Entregar", Icons.Rounded.LocalShipping),
-    RECONOCER("Reconocer", Icons.Rounded.DocumentScanner),
-    RESERVAS("Reservas", Icons.Rounded.Bookmark),
-    //CONSULTAR("Consultar", Icons.Rounded.Search)
+    ATENCION_MESON("Atención de Mesón", Icons.Rounded.Storefront)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -66,43 +64,13 @@ fun MainScreen(
     onLogout: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var selectedTab by rememberSaveable { mutableStateOf(ServialTab.ENTREGAR) }
+    var selectedTab by rememberSaveable { mutableStateOf(ServialTab.ATENCION_MESON) }
     var isMenuCollapsed by rememberSaveable { mutableStateOf(false) }
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val coroutineScope = rememberCoroutineScope()
 
-    val context = LocalContext.current
     val activeWarehouse by viewModel.activeWarehouse.collectAsState()
     var showWarehouseDialog by remember { mutableStateOf(false) }
-    val items by viewModel.items.collectAsState()
-    var isLoadingEntregas by remember { mutableStateOf(true) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
-
-    val loadEntregas: () -> Unit = {
-        coroutineScope.launch {
-            isLoadingEntregas = true
-            errorMessage = null
-            try {
-                val servicioAPI = ServicioAPI.getInstance()
-                val base64String = "Basic " + get64BaseString("serviall:8400Abn.,")
-                val fetchedOrders = servicioAPI.orders(base64String, activeWarehouse)
-                if (fetchedOrders.isNotEmpty()) {
-                    viewModel.setItems(fetchedOrders)
-                }
-                else {
-                    viewModel.setItems(emptyList())
-                }
-            } catch (e: Exception) {
-                errorMessage = e.message ?: "Error al cargar órdenes"
-            } finally {
-                isLoadingEntregas = false
-            }
-        }
-    }
-
-    LaunchedEffect(activeWarehouse) {
-        loadEntregas()
-    }
 
 
 
@@ -349,76 +317,9 @@ fun MainScreen(
                     .padding(innerPadding)
             ) {
                 when (selectedTab) {
-//                    ServialTab.RECIBIR -> RecibirScreen(
-//                        items = items,
-//                        onAddNewItem = { num, ref, client, notes, w ->
-//                            viewModel.addNewReceivedItem(num, ref, client, notes, w)
-//                        },
-//                        onUpdateStatus = { id, status ->
-//                            viewModel.updateItemStatus(id, status)
-//                        },
-//                        onUpdateProductQty = { id, code, qty ->
-//                            viewModel.updateProductQuantity(id, code, qty)
-//                        },
-//                        onScanBarcode = { id, code ->
-//                            viewModel.scanBarcodeAndIncrement(id, code)
-//                        }
-//                    )
-                    ServialTab.ENTREGAR -> {
-                        if (isLoadingEntregas) {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                CircularProgressIndicator(color = ServialRed)
-                            }
-                        } else if (errorMessage != null) {
-                            Box(
-                                modifier = Modifier.fillMaxSize().padding(16.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text(
-                                        text = "Error: $errorMessage",
-                                        color = MaterialTheme.colorScheme.error,
-                                        fontSize = 14.sp
-                                    )
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    Button(
-                                        onClick = { loadEntregas() },
-                                        colors = ButtonDefaults.buttonColors(containerColor = ServialRed)
-                                    ) {
-                                        Text("Reintentar")
-                                    }
-                                }
-                            }
-                        } else {
-                            EntregarScreen(
-                                items = items,
-                                onRecordDelivery = { id, recipient, notes, signature, deliveredBy ->
-                                    coroutineScope.launch {
-                                        val response = viewModel.recordDelivery(id, recipient, notes, signature, deliveredBy)
-                                        if (response.isBlank()) {
-                                            Toast.makeText(context, "Envío exitoso", Toast.LENGTH_LONG).show()
-                                        } else {
-                                            Toast.makeText(context, response, Toast.LENGTH_LONG).show()
-                                        }
-                                    }
-                                },
-                                onUpdateProductQty = { id, code, linenum, substitute, qty ->
-                                    viewModel.updateProductQuantity(id, code, linenum, substitute, qty)
-                                },
-                                onScanBarcode = { id, code ->
-                                    viewModel.scanBarcodeAndIncrement(id, code)
-                                }
-                            )
-                        }
-                    }
-//                    ServialTab.CONSULTAR -> ConsultarScreen(
-//                        items = items
-//                    )
-                    ServialTab.RECONOCER -> ReconocerScreen(viewModel = viewModel)
-                    ServialTab.RESERVAS -> ReservasScreen(activeWarehouse = activeWarehouse)
+                    ServialTab.ATENCION_MESON -> AtencionMesonScreen(
+                        activeWarehouse = activeWarehouse
+                    )
                 }
             }
         }

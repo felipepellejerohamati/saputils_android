@@ -6,7 +6,10 @@ enum class ItemStatus(val label: String) {
     PENDING("Pendiente"),
     RECEIVED("Recibido"),
     DELIVERING("En Reparto"),
-    COMPLETED("Entregado")
+    COMPLETED("Entregado"),
+    PARCIAL("Parcial"),
+    PENDIENTE("Pendiente"),
+    ENTREGADO("Entregado")
 }
 
 data class ProductItem(
@@ -17,7 +20,7 @@ data class ProductItem(
     val actualQty: Int = 0,
     val delivrdqty: Int=0,
     val linenum: Int = 0,
-    val qttytrans : Int =0
+    val qttytrans : Int = 0
 )
 
 data class ServialItem(
@@ -33,5 +36,10 @@ data class ServialItem(
     val weightKg: Double = 1.5,
     val products: List<ProductItem> = emptyList(),
     val signatureBase64: String? = null,
-    val deliveredBy: String? = null
+    val deliveredBy: String? = null,
+    val tipo: String = "Reserva",
+    val completado: Double = 0.0, // Double for percentage with 2 decimal precision
+    val statustext: String = "",
+    val starttime: String = "", // Fecha y hora de inicio
+    val endtime: String = ""    // Fecha y hora de fin
 )
