@@ -169,8 +169,8 @@ class ServialItemDeserializer : JsonDeserializer<ServialItem> {
         }
 
         val id = getString("id", "Id").ifBlank { UUID.randomUUID().toString() }
-        val number = getString("number", "Number", "DocNum", "docnum", "reserva")
-        val reference = getString("reference", "Reference", "NumAtCard", "numatcard")
+        val number = getString("number", "Number", "DocNum", "docnum")
+        val reference = getString("reference", "Reference", "NumAtCard", "numatcard", "reserva", "DocNum").ifBlank { getString("number", "Number") }
         val client = getString("client", "Client", "CardName", "cardname", "CardCode", "cardcode")
         val date = getString("date", "Date", "DocDate", "docdate")
         val notes = getString("notes", "Notes", "Comments", "comments")

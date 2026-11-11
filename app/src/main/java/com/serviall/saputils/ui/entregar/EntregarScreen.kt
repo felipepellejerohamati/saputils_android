@@ -368,7 +368,12 @@ fun DeliveryItemCard(
                 item.products.forEach { prod ->
                     ProductLineRowEnt(
                         product = prod,
-                        onQuantityChanged = { newQty -> onUpdateProductQty(prod.code, prod.linenum, prod.substitute, newQty) }
+                        onQuantityChanged = { newQty ->
+                            val minLimit = prod.delivrdqty
+                            val maxLimit = if (prod.actualQty > 0) minOf(prod.expectedQty, prod.actualQty) else prod.expectedQty
+                            val clamped = newQty.coerceIn(minLimit, maxLimit)
+                            onUpdateProductQty(prod.code, prod.linenum, prod.substitute, clamped)
+                        }
                     )
                     Spacer(modifier = Modifier.height(6.dp))
                 }

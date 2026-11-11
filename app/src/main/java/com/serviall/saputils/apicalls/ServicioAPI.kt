@@ -52,6 +52,10 @@ interface ServicioAPI {
     @POST("delivery")
     suspend fun delivery(@Header("Authorization") token: String,
                          @Body ServialItem: ServialItem) : String
+    @POST("postEntrega")
+    suspend fun postEntrega(@Header("Authorization") token: String,
+                            @Query(value="whscode") whs:String,
+                         @Body ServialItem: ServialItem) : String
     @POST("postReserva")
     suspend fun postReserva(@Header("Authorization") token: String,
                             @Query(value="whscode") whs:String,
