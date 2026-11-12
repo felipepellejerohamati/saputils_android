@@ -7,6 +7,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -27,6 +28,7 @@ import androidx.compose.material.icons.rounded.SwapHoriz
 import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.window.Dialog
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -216,9 +218,14 @@ fun AtencionMesonScreen(
             activeWarehouse = activeWarehouse,
             onDismiss = { selectedItemForDelivery = null },
             onDeliverConfirmed = { updatedItem, _, _ ->
-                openDocuments = openDocuments.map { if (it.id == updatedItem.id) updatedItem else it }
+                openDocuments = openDocuments.map { if (it.id == updatedItem.id || (it.reference.isNotBlank() && it.reference == updatedItem.reference)) updatedItem else it }
                 selectedItemForDelivery = null
                 Toast.makeText(context, "Entrega registrada para ${updatedItem.reference.ifBlank { updatedItem.number }}", Toast.LENGTH_LONG).show()
+                loadOpenDocuments()
+            },
+            onItemUpdated = { updatedItem ->
+                openDocuments = openDocuments.map { if (it.id == updatedItem.id || (it.reference.isNotBlank() && it.reference == updatedItem.reference)) updatedItem else it }
+                selectedItemForDelivery = updatedItem
                 loadOpenDocuments()
             }
         )
@@ -765,11 +772,256 @@ private data class ProductGroup(
 )
 
 @Composable
+private fun CorregirCantidadPedidaDialog(
+    group: ProductGroup,
+    item: ServialItem,
+    activeWarehouse: String,
+    onDismiss: () -> Unit,
+    onSaveSuccess: (updatedProducts: List<ProductItem>) -> Unit
+) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val deliveredQty = group.options.maxOfOrNull { it.delivrdqty } ?: 0
+    val minQty = maxOf(1, deliveredQty)
+    val initialQty = group.expectedQty
+    var currentNewQty by remember { mutableIntStateOf(maxOf(minQty, initialQty)) }
+    var isSaving by remember { mutableStateOf(false) }
+    var changeResponseMessage by remember { mutableStateOf<String?>(null) }
+
+    if (changeResponseMessage != null) {
+        AlertDialog(
+            onDismissRequest = { changeResponseMessage = null },
+            title = { Text("Respuesta de cambio", fontWeight = FontWeight.Bold) },
+            text = { Text(changeResponseMessage!!) },
+            confirmButton = {
+                Button(
+                    onClick = { changeResponseMessage = null },
+                    colors = ButtonDefaults.buttonColors(containerColor = ServialRed)
+                ) {
+                    Text("Aceptar")
+                }
+            }
+        )
+    }
+
+    Dialog(onDismissRequest = { if (!isSaving) onDismiss() }) {
+        Surface(
+            shape = RoundedCornerShape(20.dp),
+            color = MaterialTheme.colorScheme.surface,
+            tonalElevation = 6.dp,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                // Top handle indicator
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Surface(
+                        shape = RoundedCornerShape(2.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant,
+                        modifier = Modifier.width(36.dp).height(4.dp)
+                    ) {}
+                }
+
+                Text(
+                    text = "Corregir cantidad pedida",
+                    fontSize = 19.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "SKU cliente ",
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = group.options.firstOrNull()?.substitute?.ifBlank { group.codeKey } ?: group.codeKey,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = " · ${group.name}",
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                    Text(
+                        text = "Precargada: $initialQty unidades · Entregadas: $deliveredQty",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                // Quantity Box (matching screenshot)
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                    color = MaterialTheme.colorScheme.surface,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Pide",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Surface(
+                                shape = RoundedCornerShape(10.dp),
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                                color = MaterialTheme.colorScheme.surface,
+                                modifier = Modifier.size(40.dp)
+                            ) {
+                                IconButton(
+                                    onClick = { if (currentNewQty > minQty) currentNewQty-- },
+                                    enabled = currentNewQty > minQty && !isSaving
+                                ) {
+                                    Text("-", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = if (currentNewQty > minQty && !isSaving) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
+                                }
+                            }
+
+                            Text(
+                                text = "$currentNewQty",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.padding(horizontal = 4.dp)
+                            )
+
+                            Surface(
+                                shape = RoundedCornerShape(10.dp),
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                                color = MaterialTheme.colorScheme.surface,
+                                modifier = Modifier.size(40.dp)
+                            ) {
+                                IconButton(
+                                    onClick = { currentNewQty++ },
+                                    enabled = !isSaving
+                                ) {
+                                    Text("+", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = if (!isSaving) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Info banner box (matching screenshot)
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "La línea queda marcada \"editada en mesón\" para revisión de planificación.",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)
+                    )
+                }
+
+                // Action buttons
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        enabled = !isSaving,
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.weight(1f).height(48.dp)
+                    ) {
+                        Text("Cancelar", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                    }
+
+                    Button(
+                        onClick = {
+                            if (!isSaving) {
+                                if (currentNewQty < minQty) {
+                                    Toast.makeText(context, "La cantidad pedida no puede ser menor a $minQty", Toast.LENGTH_LONG).show()
+                                    return@Button
+                                }
+                                isSaving = true
+                                val targetKeys = group.options.map { "${it.code.trim()}_${it.substitute.trim()}_${it.linenum}" }.toSet()
+                                val updatedProducts = item.products.map { p ->
+                                    val key = "${p.code.trim()}_${p.substitute.trim()}_${p.linenum}"
+                                    if (key in targetKeys) {
+                                        p.copy(expectedQty = currentNewQty)
+                                    } else {
+                                        p
+                                    }
+                                }
+                                val updatedItem = item.copy(products = updatedProducts)
+
+                                coroutineScope.launch(Dispatchers.IO) {
+                                    try {
+                                        val api = ServicioAPI.getInstance()
+                                        val base64Auth = "Basic " + get64BaseString("serviall:8400Abn.,")
+                                        val response = api.postChange(base64Auth, activeWarehouse, updatedItem)
+                                        withContext(Dispatchers.Main) {
+                                            isSaving = false
+                                            if (response.isBlank()) {
+                                                Toast.makeText(context, "¡Cantidad pedida actualizada con éxito!", Toast.LENGTH_SHORT).show()
+                                                onSaveSuccess(updatedProducts)
+                                            } else {
+                                                changeResponseMessage = response
+                                            }
+                                        }
+                                    } catch (e: Exception) {
+                                        withContext(Dispatchers.Main) {
+                                            isSaving = false
+                                            changeResponseMessage = "Error al procesar cambio: ${e.message}"
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        enabled = !isSaving,
+                        colors = ButtonDefaults.buttonColors(containerColor = ServialRed),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.weight(1f).height(48.dp)
+                    ) {
+                        if (isSaving) {
+                            CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                        } else {
+                            Text("Guardar", fontWeight = FontWeight.Bold, color = Color.White)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
 fun AtencionMesonDetailScreen(
     item: ServialItem,
     activeWarehouse: String,
     onDismiss: () -> Unit,
-    onDeliverConfirmed: (ServialItem, String, String) -> Unit
+    onDeliverConfirmed: (ServialItem, String, String) -> Unit,
+    onItemUpdated: ((ServialItem) -> Unit)? = null
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -777,19 +1029,21 @@ fun AtencionMesonDetailScreen(
     var deliveryResponseMessage by remember { mutableStateOf<String?>(null) }
     var scanCodeInput by remember { mutableStateOf("") }
     var showCameraScan by remember { mutableStateOf(false) }
+    var currentProducts by remember(item) { mutableStateOf(item.products) }
+    var groupToEditQty by remember { mutableStateOf<ProductGroup?>(null) }
 
     fun itemKey(p: ProductItem): String = "${p.code.trim()}_${p.substitute.trim()}_${p.linenum}"
 
     val productQuantities = remember {
         mutableStateMapOf<String, Int>().apply {
-            item.products.forEach { p ->
+            currentProducts.forEach { p ->
                 put(itemKey(p), 0)
             }
         }
     }
 
-    val groupedProducts = remember(item.products) {
-        item.products.groupBy { it.code.ifBlank { it.substitute } }.map { (cKey, options) ->
+    val groupedProducts = remember(currentProducts) {
+        currentProducts.groupBy { it.code.ifBlank { it.substitute } }.map { (cKey, options) ->
             val groupName = options.firstOrNull { it.name.isNotBlank() }?.name ?: options.first().substitute.ifBlank { cKey }
             val maxExpected = options.maxOfOrNull { it.expectedQty } ?: 1
             ProductGroup(
@@ -856,7 +1110,26 @@ fun AtencionMesonDetailScreen(
         )
     }
 
+    if (groupToEditQty != null) {
+        CorregirCantidadPedidaDialog(
+            group = groupToEditQty!!,
+            item = item.copy(products = currentProducts),
+            activeWarehouse = activeWarehouse,
+            onDismiss = { groupToEditQty = null },
+            onSaveSuccess = { updatedProducts ->
+                currentProducts = updatedProducts
+                groupToEditQty = null
+                val updatedItem = item.copy(products = updatedProducts)
+                onItemUpdated?.invoke(updatedItem)
+            }
+        )
+    }
+
     val isDarkTheme = isSystemInDarkTheme()
+
+    val isOV = item.tipo.contains("OV", ignoreCase = true) || item.tipo.contains("Orden", ignoreCase = true) || item.tipo.contains("Venta", ignoreCase = true)
+    val tipoLabel = if (isOV) "OV cliente" else "Reserva cliente"
+    val tipoBadgeText = if (isOV) "⊙ OV" else "⊙ Reserva"
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -882,7 +1155,7 @@ fun AtencionMesonDetailScreen(
                         Icon(imageVector = Icons.Rounded.ArrowBack, contentDescription = "Volver")
                     }
                     Text(
-                        text = "Reserva cliente",
+                        text = tipoLabel,
                         fontSize = 14.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -894,7 +1167,7 @@ fun AtencionMesonDetailScreen(
                     border = BorderStroke(1.dp, if (isDarkTheme) Color(0xFFF97316) else Color(0xFFFFB74D))
                 ) {
                     Text(
-                        text = "⊙ Reserva",
+                        text = tipoBadgeText,
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
@@ -950,7 +1223,7 @@ fun AtencionMesonDetailScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    text = "${item.products.size} líneas de reserva en mesón Serviall · listas para retiro",
+                    text = "${item.products.size} líneas de ${if (isOV) "OV" else "reserva"} en mesón Serviall · listas para retiro",
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
                     fontSize = 11.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -1069,7 +1342,8 @@ fun AtencionMesonDetailScreen(
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 14.sp,
                                     textDecoration = TextDecoration.Underline,
-                                    color = MaterialTheme.colorScheme.onSurface
+                                    color = ServialRed,
+                                    modifier = Modifier.clickable { groupToEditQty = group }
                                 )
                             }
 
@@ -1275,7 +1549,7 @@ fun AtencionMesonDetailScreen(
                     if (!isDelivering) {
                         isDelivering = true
                         val nowStr = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
-                        val updatedProducts = item.products.map { p ->
+                        val updatedProducts = currentProducts.map { p ->
                             val qty = productQuantities[itemKey(p)] ?: 0
                             p.copy(qttytrans = qty, delivrdqty = p.delivrdqty + qty)
                         }
@@ -1356,9 +1630,10 @@ fun OpcionesAtencionDialog(
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 // Header
+                val isOV = item.tipo.contains("OV", ignoreCase = true) || item.tipo.contains("Orden", ignoreCase = true) || item.tipo.contains("Venta", ignoreCase = true)
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(
-                        text = "Reserva cliente",
+                        text = if (isOV) "OV cliente" else "Reserva cliente",
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -1501,6 +1776,7 @@ fun SoloVerPedidoScreen(
     onComenzarAtencionClick: () -> Unit
 ) {
     val isDarkTheme = isSystemInDarkTheme()
+    val isOV = item.tipo.contains("OV", ignoreCase = true) || item.tipo.contains("Orden", ignoreCase = true) || item.tipo.contains("Venta", ignoreCase = true)
     val groupedProducts = remember(item.products) {
         item.products.groupBy { it.code.ifBlank { it.substitute } }.map { (cKey, options) ->
             val groupName = options.firstOrNull { it.name.isNotBlank() }?.name ?: options.first().substitute.ifBlank { cKey }
@@ -1551,7 +1827,7 @@ fun SoloVerPedidoScreen(
                         Icon(imageVector = Icons.Rounded.ArrowBack, contentDescription = "Volver")
                     }
                     Text(
-                        text = "Reserva cliente",
+                        text = if (isOV) "OV cliente" else "Reserva cliente",
                         fontSize = 14.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
