@@ -128,6 +128,8 @@ data class ServialItem(
     val weightKg: Double = 1.5,
     val products: List<ProductItem> = emptyList(),
     val signatureBase64: String? = null,
+    val photoBase64: String? = null,
+    val folioRebaja: String? = null,
     val deliveredBy: String? = null,
     val tipo: String = "Reserva",
     val completado: Double = 0.0, // Double for percentage with 2 decimal precision
@@ -177,7 +179,9 @@ class ServialItemDeserializer : JsonDeserializer<ServialItem> {
         val recipientName = getString("recipientName", "RecipientName").ifBlank { null }
         val deliveryTimestamp = getString("deliveryTimestamp", "DeliveryTimestamp").ifBlank { null }
         val weightKg = getDouble(1.5, "weightKg", "WeightKg", "weight")
-        val signatureBase64 = getString("signatureBase64", "SignatureBase64").ifBlank { null }
+        val signatureBase64 = getString("signatureBase64", "SignatureBase64", "signaturebase64").ifBlank { null }
+        val photoBase64 = getString("photoBase64", "PhotoBase64", "photobase64").ifBlank { null }
+        val folioRebaja = getString("folioRebaja", "FolioRebaja", "foliorebaja", "folio").ifBlank { null }
         val deliveredBy = getString("deliveredBy", "DeliveredBy").ifBlank { null }
         val tipo = getString("tipo", "Tipo", "DocType").ifBlank { "Reserva" }
         val completado = getDouble(0.0, "completado", "Completado")
@@ -216,6 +220,8 @@ class ServialItemDeserializer : JsonDeserializer<ServialItem> {
             weightKg = weightKg,
             products = productsList,
             signatureBase64 = signatureBase64,
+            photoBase64 = photoBase64,
+            folioRebaja = folioRebaja,
             deliveredBy = deliveredBy,
             tipo = tipo,
             completado = completado,

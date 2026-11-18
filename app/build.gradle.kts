@@ -16,7 +16,7 @@ android {
         minSdk = 28
         targetSdk = 37
         versionCode = 1
-        versionName = "1.9.4"
+        versionName = "1.9.5"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -40,7 +40,7 @@ android {
 
 androidComponents {
     onVariants { variant ->
-        val versionName = "1.9.4"
+        val versionName = "1.9.5"
         val buildType = variant.name
         variant.outputs.forEach { output ->
             output.outputFileName.set("PruebaTiti$versionName.apk")
